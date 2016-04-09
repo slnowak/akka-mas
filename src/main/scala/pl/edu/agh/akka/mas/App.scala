@@ -1,6 +1,6 @@
 package pl.edu.agh.akka.mas
 
-import akka.actor.{ActorSystem, Props}
+import akka.actor.{ActorRef, ActorSystem}
 import com.typesafe.config.ConfigFactory
 
 /**
@@ -9,7 +9,7 @@ import com.typesafe.config.ConfigFactory
 object App {
   def main(args: Array[String]): Unit = {
     if (args.isEmpty)
-      startup(Seq("2553"))
+      startup(Seq("2551", "2552", "2553"))
     else
       startup(args)
   }
@@ -23,7 +23,8 @@ object App {
       // Create an Akka system
       val system = ActorSystem("ClusterSystem", config)
       // Create an actor that handles cluster domain events
-      system.actorOf(Props[IslandTopologyCoordinator], name = "coord")
+      val island: ActorRef = system.actorOf(IslandActor.props(), name = "island")
+      system.actorOf(IslandTopologyCoordinator.props(island), name = "islandCoordinator")
     }
   }
 }
