@@ -2,7 +2,8 @@ package pl.edu.agh.akka.mas.island
 
 import akka.actor._
 import pl.edu.agh.akka.mas.cluster.management.IslandTopologyCoordinator.NeighboursChanged
-import pl.edu.agh.akka.mas.island.MigrationArena.{CreateNewAgents, Agent, JoinArena}
+import pl.edu.agh.akka.mas.island.AgentActor.JoinArena
+import pl.edu.agh.akka.mas.island.MigrationArena.{Agent, CreateNewAgents}
 
 import scala.util.Random
 
@@ -17,6 +18,7 @@ class MigrationArena(var neighbours: List[ActorSelection], requiredAgentsToMigra
       this.neighbours = newNeighbours
 
     case JoinArena(agentState) if enoughAgentsGathered() =>
+      log.info(s"$self: starting migration with agents: $agentsToMigrate to random neighbour from: $neighbours")
       agentsToMigrate = Agent(agentState, sender()) :: agentsToMigrate
       randomNeighbour() foreach migrate(agentsToMigrate reverse)
       agentsToMigrate = List.empty
@@ -44,8 +46,6 @@ object MigrationArena {
     Props(new MigrationArena(neighbours, requiredAgentsToMigrate))
 
   trait AgentState
-
-  case class JoinArena(agentState: AgentState)
 
   case class CreateNewAgents(agentStates: List[AgentState])
 

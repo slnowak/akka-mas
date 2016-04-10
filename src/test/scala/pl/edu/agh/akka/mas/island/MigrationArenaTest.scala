@@ -3,7 +3,8 @@ package pl.edu.agh.akka.mas.island
 import akka.actor.{ActorRef, ActorSelection, ActorSystem}
 import akka.testkit._
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, WordSpecLike}
-import pl.edu.agh.akka.mas.island.MigrationArena.{AgentState, CreateNewAgents, JoinArena}
+import pl.edu.agh.akka.mas.island.AgentActor.JoinArena
+import pl.edu.agh.akka.mas.island.MigrationArena.{AgentState, CreateNewAgents}
 
 /**
   * Created by novy on 10.04.16.
@@ -58,12 +59,10 @@ class MigrationArenaTest extends TestKit(ActorSystem()) with WordSpecLike with B
       val secondAgentWatcher = TestProbe()
       secondAgentWatcher watch secondAgent.ref
 
-
       val firstAgentState: AgentState = randomAgentState()
       firstAgent.send(objectUnderTest, JoinArena(firstAgentState))
 
       // when
-
       val secondAgentState: AgentState = randomAgentState()
       secondAgent.send(objectUnderTest, JoinArena(secondAgentState))
 
@@ -76,5 +75,4 @@ class MigrationArenaTest extends TestKit(ActorSystem()) with WordSpecLike with B
   private def randomAgentState(): AgentState = {
     new AgentState {}
   }
-
 }

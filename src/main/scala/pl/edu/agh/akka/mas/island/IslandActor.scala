@@ -1,35 +1,57 @@
 package pl.edu.agh.akka.mas.island
 
-import akka.actor.{Actor, ActorLogging, ActorSelection, Props}
+import java.util.UUID
+
+import akka.actor.SupervisorStrategy.Restart
+import akka.actor._
 import pl.edu.agh.akka.mas.cluster.management.IslandTopologyCoordinator.NeighboursChanged
-import pl.edu.agh.akka.mas.island.IslandActor.HelloFromTheOtherSiiiiiiiiiiiideeeee
+import pl.edu.agh.akka.mas.island.IslandActor.FakeAgentState
+import pl.edu.agh.akka.mas.island.MigrationArena.{AgentState, CreateNewAgents}
+
+import scala.concurrent.duration._
 
 /**
   * Created by novy on 09.04.16.
   */
 class IslandActor(var neighbours: List[ActorSelection], workers: Int) extends Actor with ActorLogging {
 
+  val migrationIsland = context.actorOf(MigrationArena.props(neighbours, 2))
+
+  // todo fix it later
+  override val supervisorStrategy =
+    OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
+      case _: Exception =>
+        log.warning("exception occurred")
+        Restart
+    }
+
+
+  override def preStart(): Unit = {
+    // todo for now it only spawns new actors and doesn't store them anywhere
+    0 to workers foreach { _ => newAgent() }
+  }
+
   override def receive: Receive = {
-    case NeighboursChanged(newNeighbours) =>
+    case msg@NeighboursChanged(newNeighbours) =>
       this.neighbours = newNeighbours
-      sayHelloTo(newNeighbours)
-      log.info(s"new neighbours: $neighbours")
+      migrationIsland forward msg
 
-    case hello@HelloFromTheOtherSiiiiiiiiiiiideeeee(_) =>
-      log.info(s"message from different node: $hello")
+    case CreateNewAgents(agents) =>
+      log.info(s"got request to create new workers from ${sender()}, with data: $agents")
+      agents foreach newAgent
   }
 
-  def sayHelloTo(newNeighbours: List[ActorSelection]) = {
-    //    todo just for testing purposes
-    neighbours foreach (_ ! HelloFromTheOtherSiiiiiiiiiiiideeeee(self.path.address.hostPort))
-  }
+  def newAgent(agentState: AgentState = randomAgentState()): ActorRef =
+    context.actorOf(AgentActor.props(agentState, migrationIsland))
+
+  def randomAgentState(): AgentState = FakeAgentState(UUID.randomUUID().toString)
 }
 
 object IslandActor {
   def props(neighbours: List[ActorSelection] = List(), workers: Int = 10): Props =
     Props(new IslandActor(neighbours, workers))
 
-  case class HelloFromTheOtherSiiiiiiiiiiiideeeee(sender: String)
+  case class FakeAgentState(id: String) extends AgentState
 
 }
 
