@@ -1,13 +1,13 @@
-package pl.edu.agh.akka.mas
+package pl.edu.agh.akka.mas.island
 
 import akka.actor.{Actor, ActorLogging, ActorSelection, Props}
-import pl.edu.agh.akka.mas.IslandActor.HelloFromTheOtherSiiiiiiiiiiiideeeee
-import pl.edu.agh.akka.mas.IslandTopologyCoordinator.NeighboursChanged
+import pl.edu.agh.akka.mas.cluster.management.IslandTopologyCoordinator.NeighboursChanged
+import pl.edu.agh.akka.mas.island.IslandActor.HelloFromTheOtherSiiiiiiiiiiiideeeee
 
 /**
   * Created by novy on 09.04.16.
   */
-class IslandActor(var neighbours: List[ActorSelection]) extends Actor with ActorLogging {
+class IslandActor(var neighbours: List[ActorSelection], workers: Int) extends Actor with ActorLogging {
 
   override def receive: Receive = {
     case NeighboursChanged(newNeighbours) =>
@@ -26,7 +26,8 @@ class IslandActor(var neighbours: List[ActorSelection]) extends Actor with Actor
 }
 
 object IslandActor {
-  def props(neighbours: List[ActorSelection] = List()): Props = Props(new IslandActor(neighbours))
+  def props(neighbours: List[ActorSelection] = List(), workers: Int = 10): Props =
+    Props(new IslandActor(neighbours, workers))
 
   case class HelloFromTheOtherSiiiiiiiiiiiideeeee(sender: String)
 

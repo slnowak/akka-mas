@@ -1,4 +1,4 @@
-package pl.edu.agh.akka.mas.topology
+package pl.edu.agh.akka.mas.cluster.management.topology
 
 import akka.actor.Address
 import org.scalatest.{FlatSpec, Matchers}
@@ -6,13 +6,13 @@ import org.scalatest.{FlatSpec, Matchers}
 /**
   * Created by novy on 06.04.16.
   */
-class CircleTopologyTest extends FlatSpec with Matchers {
+class RingTopologyTest extends FlatSpec with Matchers {
 
   implicit def strToAddress(str: String): Address = Address("akka", str)
 
-  "A Circle Topology" should "return no neighbours given 1 Island topology" in {
+  "A Ring Topology" should "return no neighbours given 1 Island topology" in {
     // given
-    val emptyTopology: CircleTopology = CircleTopology()
+    val emptyTopology: RingTopology = RingTopology()
     val soleIsland: Island = Island("addr1")
     val withOneIsland: IslandTopology = emptyTopology.withNew(soleIsland)
 
@@ -22,7 +22,7 @@ class CircleTopologyTest extends FlatSpec with Matchers {
 
   it should "return an empty neighbours list in case of island outside topology" in {
     // given
-    val topology: CircleTopology = CircleTopology()
+    val topology: RingTopology = RingTopology()
 
     // expect
     topology neighboursOf Island("666") should be(List())
@@ -32,7 +32,7 @@ class CircleTopologyTest extends FlatSpec with Matchers {
     // given
     val firstIsland: Island = Island("addr1")
     val secondIsland: Island = Island("addr2")
-    val topology: IslandTopology = CircleTopology().withNew(firstIsland).withNew(secondIsland)
+    val topology: IslandTopology = RingTopology().withNew(firstIsland).withNew(secondIsland)
 
     // expect
     topology neighboursOf firstIsland should be(List(secondIsland))
@@ -41,7 +41,7 @@ class CircleTopologyTest extends FlatSpec with Matchers {
 
   it should "return previous and next island as neighbours for middle-aligned island" in {
     // given
-    val topology = CircleTopology()
+    val topology = RingTopology()
       .withNew(Island("addr1"))
       .withNew(Island("addr2"))
       .withNew(Island("addr3"))
@@ -53,7 +53,7 @@ class CircleTopologyTest extends FlatSpec with Matchers {
 
   it should "return previous and next island with respect to ring ordering for first island" in {
     // given
-    val topology = CircleTopology()
+    val topology = RingTopology()
       .withNew(Island("addr1"))
       .withNew(Island("addr2"))
       .withNew(Island("addr3"))
@@ -65,7 +65,7 @@ class CircleTopologyTest extends FlatSpec with Matchers {
 
   it should "return previous and next island with respect to ring ordering for last island" in {
     // given
-    val topology = CircleTopology()
+    val topology = RingTopology()
       .withNew(Island("addr1"))
       .withNew(Island("addr2"))
       .withNew(Island("addr3"))
@@ -77,7 +77,7 @@ class CircleTopologyTest extends FlatSpec with Matchers {
 
   it should "remove island from topology on request" in {
     // given
-    val topology = CircleTopology()
+    val topology = RingTopology()
       .withNew(Island("addr1"))
       .withNew(Island("addr2"))
       .withNew(Island("addr3"))

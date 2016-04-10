@@ -2,6 +2,8 @@ package pl.edu.agh.akka.mas
 
 import akka.actor.{ActorRef, ActorSystem}
 import com.typesafe.config.ConfigFactory
+import pl.edu.agh.akka.mas.cluster.management.IslandTopologyCoordinator
+import pl.edu.agh.akka.mas.island.IslandActor
 
 /**
   * Created by novy on 06.04.16.

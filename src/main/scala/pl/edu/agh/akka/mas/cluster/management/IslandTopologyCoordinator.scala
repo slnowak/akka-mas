@@ -1,20 +1,18 @@
-package pl.edu.agh.akka.mas
+package pl.edu.agh.akka.mas.cluster.management
 
 import akka.actor._
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
-import pl.edu.agh.akka.mas.IslandTopologyCoordinator.NeighboursChanged
-import pl.edu.agh.akka.mas.topology.{CircleTopology, Island, IslandTopology}
+import pl.edu.agh.akka.mas.cluster.management.IslandTopologyCoordinator.NeighboursChanged
+import pl.edu.agh.akka.mas.cluster.management.topology.{Island, IslandTopology, RingTopology}
 
 /**
   * Created by novy on 09.04.16.
   */
-class IslandTopologyCoordinator(islandActor: ActorRef) extends Actor with ActorLogging {
+class IslandTopologyCoordinator(var topology: IslandTopology, islandActor: ActorRef) extends Actor with ActorLogging {
 
   val cluster = Cluster(context.system)
   val thisIsland = Island(cluster.selfAddress)
-  //  todo hardcoded
-  var topology: IslandTopology = CircleTopology()
 
   override def preStart(): Unit = subscribeToClusterChanges()
 
@@ -63,7 +61,8 @@ class IslandTopologyCoordinator(islandActor: ActorRef) extends Actor with ActorL
 }
 
 object IslandTopologyCoordinator {
-  def props(islandActor: ActorRef): Props = Props(new IslandTopologyCoordinator(islandActor))
+  def props(islandActor: ActorRef, initialTopology: IslandTopology = RingTopology()): Props =
+    Props(new IslandTopologyCoordinator(initialTopology, islandActor))
 
   case class NeighboursChanged(neighbours: List[ActorSelection])
 

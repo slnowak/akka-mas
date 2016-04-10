@@ -1,4 +1,4 @@
-package pl.edu.agh.akka.mas.topology
+package pl.edu.agh.akka.mas.cluster.management.topology
 
 import akka.actor.Address
 
