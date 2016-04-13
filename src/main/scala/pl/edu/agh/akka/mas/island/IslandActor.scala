@@ -15,7 +15,8 @@ import scala.concurrent.duration._
   */
 class IslandActor(var neighbours: List[ActorSelection], workers: Int) extends Actor with ActorLogging {
 
-  val migrationIsland = context.actorOf(MigrationArena.props(neighbours, 2))
+  private val migrationIsland = context.actorOf(MigrationArena.props(neighbours, 2))
+  private val resultExchangeArena: ActorRef = context.actorOf(ResultExchangeArena.props())
 
   // todo fix it later
   override val supervisorStrategy =
@@ -42,7 +43,7 @@ class IslandActor(var neighbours: List[ActorSelection], workers: Int) extends Ac
   }
 
   def newAgent(agentState: AgentState = randomAgentState()): ActorRef =
-    context.actorOf(AgentActor.props(agentState, migrationIsland))
+    context.actorOf(AgentActor.props(agentState, migrationIsland, resultExchangeArena))
 
   def randomAgentState(): AgentState = FakeAgentState(UUID.randomUUID().toString)
 }

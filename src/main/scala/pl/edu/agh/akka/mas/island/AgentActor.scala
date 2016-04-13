@@ -9,7 +9,7 @@ import scala.concurrent.duration._
 /**
   * Created by novy on 10.04.16.
   */
-class AgentActor(state: AgentState, migrationArena: ActorRef) extends Actor with ActorLogging {
+class AgentActor(state: AgentState, migrationArena: ActorRef, resultExchangeArena: ActorRef) extends Actor with ActorLogging {
 
   import context.dispatcher
 
@@ -22,8 +22,11 @@ class AgentActor(state: AgentState, migrationArena: ActorRef) extends Actor with
 }
 
 object AgentActor {
-  def props(agentState: AgentState, migrationArena: ActorRef): Props = Props(new AgentActor(agentState, migrationArena))
+  def props(agentState: AgentState, migrationArena: ActorRef, resultExchangeArena: ActorRef): Props =
+    Props(new AgentActor(agentState, migrationArena, resultExchangeArena))
 
   case class JoinArena(agentState: AgentState)
+
+  case class ExchangeResult(agentState: AgentState)
 
 }
