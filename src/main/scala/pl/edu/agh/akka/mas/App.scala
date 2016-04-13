@@ -11,7 +11,7 @@ import pl.edu.agh.akka.mas.island.IslandActor
 object App {
   def main(args: Array[String]): Unit = {
     if (args.isEmpty)
-      startup(Seq("2551", "2552", "2553"))
+      startup(Seq("2551", "2552"))
     else
       startup(args)
   }
