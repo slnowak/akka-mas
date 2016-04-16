@@ -29,7 +29,7 @@ class MigrationArena(var neighbours: List[ActorSelection], requiredAgentsToMigra
 
   private def migrate(agentsToMigrate: List[Agent])(neighbour: ActorSelection): Unit = {
     neighbour ! CreateNewAgents(agentsToMigrate.map(_.agentState))
-    killAgents(agentsToMigrate)
+//    killAgents(agentsToMigrate)
   }
 
   private def killAgents(agentsToMigrate: List[Agent]): Unit =

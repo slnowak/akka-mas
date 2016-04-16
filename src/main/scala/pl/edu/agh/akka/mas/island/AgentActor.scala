@@ -13,12 +13,14 @@ class AgentActor(state: AgentState, migrationArena: ActorRef, resultExchangeAren
 
   import context.dispatcher
 
-  override def preStart(): Unit = context.system.scheduler.scheduleOnce(30 seconds, self, "migrate")
+  override def preStart(): Unit = context.system.scheduler.schedule(10 seconds, 30 seconds, self, "migrate")
 
-  override def receive: Receive = {
+  def handleMigration: Receive = {
     case "migrate" =>
       migrationArena ! JoinArena(state)
   }
+
+  def receive = handleMigration
 }
 
 object AgentActor {
