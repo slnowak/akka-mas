@@ -7,6 +7,7 @@ import akka.actor._
 import pl.edu.agh.akka.mas.cluster.management.IslandTopologyCoordinator.NeighboursChanged
 import pl.edu.agh.akka.mas.island.IslandActor.FakeAgentState
 import pl.edu.agh.akka.mas.island.MigrationArena.{AgentState, CreateNewAgents}
+import pl.edu.agh.akka.mas.island.ResultExchangeArena.NewResultArrived
 
 import scala.concurrent.duration._
 
@@ -15,8 +16,10 @@ import scala.concurrent.duration._
   */
 class IslandActor(var neighbours: List[ActorSelection], workers: Int) extends Actor with ActorLogging {
 
-  private val migrationIsland = context.actorOf(MigrationArena.props(neighbours, 2))
-  private val resultExchangeArena: ActorRef = context.actorOf(ResultExchangeArena.props())
+  protected val migrationIsland = context.actorOf(MigrationArena.props(neighbours, 2))
+  protected val resultExchangeArena: ActorRef = context.actorOf(ResultExchangeArena.props(neighbours))
+  private var problemWorkers = List[ActorRef]()
+  private var systemStateInfo: Map[ActorRef,AgentState] = Map()
 
   // todo fix it later
   override val supervisorStrategy =
@@ -28,31 +31,51 @@ class IslandActor(var neighbours: List[ActorSelection], workers: Int) extends Ac
 
 
   override def preStart(): Unit = {
-    // todo for now it only spawns new actors and doesn't store them anywhere
-    0 to workers foreach { _ => newAgent() }
+    problemWorkers = for (i <- (0 to workers).toList) yield newAgent()
+    context.system.scheduler.schedule(10 seconds, 10 seconds, self, "share_system_info")
   }
 
   override def receive: Receive = {
     case msg@NeighboursChanged(newNeighbours) =>
       this.neighbours = newNeighbours
       migrationIsland forward msg
+      resultExchangeArena forward msg
 
     case CreateNewAgents(agents) =>
       log.info(s"got request to create new workers from ${sender()}, with data: $agents")
       agents foreach newAgent
+
+    case NewResultArrived(owner, agentState) => {
+      if(!systemStateInfo.contains(owner) || agentState.betterThan(systemStateInfo(owner)))
+        systemStateInfo += (owner -> agentState)
+      logSystemInfo
+    }
+    case "share_system_info" => {
+      systemStateInfo.keys foreach {agent => {
+        neighbours foreach {
+          neighbour => neighbour ! NewResultArrived(agent, systemStateInfo(agent))
+        }
+      }}
+    }
+  }
+
+  def logSystemInfo : Unit = {
+    log.info(s"$systemStateInfo")
   }
 
   def newAgent(agentState: AgentState = randomAgentState()): ActorRef =
     context.actorOf(AgentActor.props(agentState, migrationIsland, resultExchangeArena))
 
+
   def randomAgentState(): AgentState = FakeAgentState(UUID.randomUUID().toString)
 }
 
 object IslandActor {
-  def props(neighbours: List[ActorSelection] = List(), workers: Int = 10): Props =
+  def props(neighbours: List[ActorSelection] = List(), workers: Int = 3): Props =
     Props(new IslandActor(neighbours, workers))
 
-  case class FakeAgentState(id: String) extends AgentState
-
+  case class FakeAgentState(id: String) extends AgentState[FakeAgentState] {
+    override def betterThan(another: FakeAgentState): Boolean = true
+  }
 }
 

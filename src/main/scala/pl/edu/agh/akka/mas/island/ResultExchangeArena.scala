@@ -1,6 +1,7 @@
 package pl.edu.agh.akka.mas.island
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, ActorSelection, Props}
+import pl.edu.agh.akka.mas.cluster.management.IslandTopologyCoordinator.NeighboursChanged
 import pl.edu.agh.akka.mas.island.AgentActor.{ExchangeResult, JoinArena}
 import pl.edu.agh.akka.mas.island.MigrationArena.AgentState
 import pl.edu.agh.akka.mas.island.ResultExchangeArena.NewResultArrived
@@ -8,28 +9,28 @@ import pl.edu.agh.akka.mas.island.ResultExchangeArena.NewResultArrived
 /**
   * Created by novy on 13.04.16.
   */
-class ResultExchangeArena extends Actor with ActorLogging {
+class ResultExchangeArena(var neighbours: List[ActorSelection]) extends Actor with ActorLogging {
 
-  var workers: Set[ActorRef] = Set.empty
+//  var workers: Set[ActorRef] = Set.empty
 
   override def receive: Receive = {
-    case JoinArena(_) =>
-      workers = workers + sender()
+    case NeighboursChanged(newNeighbours) =>
+      this.neighbours = newNeighbours
 
     case ExchangeResult(newResult) =>
       broadcastNewResultToAllExpect(sender(), newResult)
   }
 
   def broadcastNewResultToAllExpect(sender: ActorRef, newResult: AgentState): Unit = {
-    (workers - sender) foreach {
-      _ ! NewResultArrived(newResult)
+    (neighbours) foreach {
+      _ ! NewResultArrived(sender, newResult)
     }
   }
 }
 
 object ResultExchangeArena {
-  def props(): Props = Props(new ResultExchangeArena())
+  def props(neighbours: List[ActorSelection]): Props = Props(new ResultExchangeArena(neighbours))
 
-  case class NewResultArrived(agentState: AgentState)
+  case class NewResultArrived(sender: ActorRef, agentState: AgentState)
 
 }

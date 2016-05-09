@@ -1,7 +1,7 @@
 package pl.edu.agh.akka.mas.island
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import pl.edu.agh.akka.mas.island.AgentActor.JoinArena
+import pl.edu.agh.akka.mas.island.AgentActor.{ExchangeResult, JoinArena}
 import pl.edu.agh.akka.mas.island.MigrationArena.AgentState
 
 import scala.concurrent.duration._
@@ -13,11 +13,17 @@ class AgentActor(state: AgentState, migrationArena: ActorRef, resultExchangeAren
 
   import context.dispatcher
 
-  override def preStart(): Unit = context.system.scheduler.scheduleOnce(30 seconds, self, "migrate")
+  override def preStart(): Unit = {
+    context.system.scheduler.schedule(10 seconds, 10 seconds, self, "migrate")
+    context.system.scheduler.schedule(10 seconds, 20 second, self, "exchange result")
+  }
 
   override def receive: Receive = {
     case "migrate" =>
       migrationArena ! JoinArena(state)
+
+    case "exchange result" =>
+      resultExchangeArena ! ExchangeResult(state)
   }
 }
 

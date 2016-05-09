@@ -28,8 +28,8 @@ class MigrationArena(var neighbours: List[ActorSelection], requiredAgentsToMigra
   }
 
   private def migrate(agentsToMigrate: List[Agent])(neighbour: ActorSelection): Unit = {
-    neighbour ! CreateNewAgents(agentsToMigrate.map(_.agentState))
-    killAgents(agentsToMigrate)
+//    neighbour ! CreateNewAgents(agentsToMigrate.map(_.agentState))
+//    killAgents(agentsToMigrate)
   }
 
   private def killAgents(agentsToMigrate: List[Agent]): Unit =
@@ -45,7 +45,9 @@ object MigrationArena {
   def props(neighbours: List[ActorSelection], requiredAgentsToMigrate: Int = 3): Props =
     Props(new MigrationArena(neighbours, requiredAgentsToMigrate))
 
-  trait AgentState
+  trait AgentState[T <: AgentState[T]] {
+    def betterThan(another: T): Boolean
+  }
 
   case class CreateNewAgents(agentStates: List[AgentState])
 
