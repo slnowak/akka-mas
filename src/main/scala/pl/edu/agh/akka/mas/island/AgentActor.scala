@@ -2,14 +2,14 @@ package pl.edu.agh.akka.mas.island
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import pl.edu.agh.akka.mas.island.AgentActor.{ExchangeResult, JoinArena}
-import pl.edu.agh.akka.mas.island.MigrationArena.AgentState
+import pl.edu.agh.akka.mas.problems.RastriginAgent.RastriginSolution
 
 import scala.concurrent.duration._
 
 /**
   * Created by novy on 10.04.16.
   */
-class AgentActor(state: AgentState, migrationArena: ActorRef, resultExchangeArena: ActorRef) extends Actor with ActorLogging {
+class AgentActor(state: RastriginSolution, migrationArena: ActorRef, resultExchangeArena: ActorRef) extends Actor with ActorLogging {
 
   import context.dispatcher
 
@@ -28,11 +28,11 @@ class AgentActor(state: AgentState, migrationArena: ActorRef, resultExchangeAren
 }
 
 object AgentActor {
-  def props(agentState: AgentState, migrationArena: ActorRef, resultExchangeArena: ActorRef): Props =
-    Props(new AgentActor(agentState, migrationArena, resultExchangeArena))
+  def props(solution: RastriginSolution, migrationArena: ActorRef, resultExchangeArena: ActorRef): Props =
+    Props(new AgentActor(solution, migrationArena, resultExchangeArena))
 
-  case class JoinArena(agentState: AgentState)
+  case class JoinArena(agentState: RastriginSolution)
 
-  case class ExchangeResult(agentState: AgentState)
+  case class ExchangeResult(agentState: RastriginSolution)
 
 }

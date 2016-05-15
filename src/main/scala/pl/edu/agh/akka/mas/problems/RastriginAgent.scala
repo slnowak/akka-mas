@@ -1,15 +1,15 @@
 package pl.edu.agh.akka.mas.problems
 
 import akka.actor.{ActorRef, Props}
-import pl.edu.agh.akka.mas.island.MigrationArena.AgentState
 import pl.edu.agh.akka.mas.island.AgentActor
+import pl.edu.agh.akka.mas.problems.RastriginAgent.RastriginSolution
 
 import scala.concurrent.duration._
 
 /**
   * Created by ania on 5/8/16.
   */
-class RastriginAgent(state: AgentState, migrationArena: ActorRef, resultExchangeArena: ActorRef) extends AgentActor(state, migrationArena, resultExchangeArena){
+class RastriginAgent(state: RastriginSolution, migrationArena: ActorRef, resultExchangeArena: ActorRef) extends AgentActor(state, migrationArena, resultExchangeArena) {
 
   import context.dispatcher
 
@@ -30,12 +30,13 @@ class RastriginAgent(state: AgentState, migrationArena: ActorRef, resultExchange
 }
 
 object RastriginAgent {
-  def props(agentState: AgentState, migrationArena: ActorRef, resultExchangeArena: ActorRef): Props =
+  def props(agentState: RastriginSolution, migrationArena: ActorRef, resultExchangeArena: ActorRef): Props =
     Props(new RastriginAgent(agentState, migrationArena, resultExchangeArena))
 
-  case class RastriginState(result: Float) extends AgentState[RastriginState] {
-    override def betterThan(another: RastriginState): Boolean = result > another.result
+  case class RastriginSolution(result: Float) {
+    def betterThan(another: RastriginSolution): Boolean = result > another.result
   }
+
 }
 
 

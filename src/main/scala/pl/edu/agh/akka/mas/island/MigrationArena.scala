@@ -4,6 +4,7 @@ import akka.actor._
 import pl.edu.agh.akka.mas.cluster.management.IslandTopologyCoordinator.NeighboursChanged
 import pl.edu.agh.akka.mas.island.AgentActor.JoinArena
 import pl.edu.agh.akka.mas.island.MigrationArena.{Agent, CreateNewAgents}
+import pl.edu.agh.akka.mas.problems.RastriginAgent.RastriginSolution
 
 import scala.util.Random
 
@@ -45,12 +46,8 @@ object MigrationArena {
   def props(neighbours: List[ActorSelection], requiredAgentsToMigrate: Int = 3): Props =
     Props(new MigrationArena(neighbours, requiredAgentsToMigrate))
 
-  trait AgentState[T <: AgentState[T]] {
-    def betterThan(another: T): Boolean
-  }
+  case class CreateNewAgents(solutions: List[RastriginSolution])
 
-  case class CreateNewAgents(agentStates: List[AgentState])
-
-  case class Agent(agentState: AgentState, agentActor: ActorRef)
+  case class Agent(solution: RastriginSolution, agentActor: ActorRef)
 
 }

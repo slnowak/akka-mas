@@ -1,14 +1,13 @@
 package pl.edu.agh.akka.mas.island
 
-import java.util.UUID
-
 import akka.actor.SupervisorStrategy.Restart
 import akka.actor._
 import pl.edu.agh.akka.mas.cluster.management.IslandTopologyCoordinator.NeighboursChanged
-import pl.edu.agh.akka.mas.island.IslandActor.FakeAgentState
-import pl.edu.agh.akka.mas.island.MigrationArena.{AgentState, CreateNewAgents}
-import pl.edu.agh.akka.mas.island.ResultExchangeArena.NewResultArrived
+import pl.edu.agh.akka.mas.island.MigrationArena.CreateNewAgents
+import pl.edu.agh.akka.mas.problems.RastriginAgent.RastriginSolution
 
+import scala.concurrent.ExecutionContext
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
 /**
@@ -17,9 +16,13 @@ import scala.concurrent.duration._
 class IslandActor(var neighbours: List[ActorSelection], workers: Int) extends Actor with ActorLogging {
 
   protected val migrationIsland = context.actorOf(MigrationArena.props(neighbours, 2))
-  protected val resultExchangeArena: ActorRef = context.actorOf(ResultExchangeArena.props(neighbours))
+
+  protected val resultExchangeArena: ActorRef = context.actorOf(
+    ResultExchangeArena.props(neighbours, startingSolution())
+  )
+
   private var problemWorkers = List[ActorRef]()
-  private var systemStateInfo: Map[ActorRef,AgentState] = Map()
+  private var systemStateInfo: Map[ActorRef, RastriginSolution] = Map()
 
   // todo fix it later
   override val supervisorStrategy =
@@ -45,37 +48,34 @@ class IslandActor(var neighbours: List[ActorSelection], workers: Int) extends Ac
       log.info(s"got request to create new workers from ${sender()}, with data: $agents")
       agents foreach newAgent
 
-    case NewResultArrived(owner, agentState) => {
-      if(!systemStateInfo.contains(owner) || agentState.betterThan(systemStateInfo(owner)))
-        systemStateInfo += (owner -> agentState)
-      logSystemInfo
-    }
-    case "share_system_info" => {
-      systemStateInfo.keys foreach {agent => {
-        neighbours foreach {
-          neighbour => neighbour ! NewResultArrived(agent, systemStateInfo(agent))
-        }
-      }}
-    }
+    //    case NewResultArrived(owner, agentState) => {
+    //      if(!systemStateInfo.contains(owner) || agentState.betterThan(systemStateInfo(owner)))
+    //        systemStateInfo += (owner -> agentState)
+    //      logSystemInfo
+    //    }
+    //    case "share_system_info" => {
+    //      systemStateInfo.keys foreach {agent => {
+    //        neighbours foreach {
+    //          neighbour => neighbour ! NewResultArrived(agent, systemStateInfo(agent))
+    //        }
+    //      }}
+    //    }
   }
 
-  def logSystemInfo : Unit = {
+  def logSystemInfo: Unit = {
     log.info(s"$systemStateInfo")
   }
 
-  def newAgent(agentState: AgentState = randomAgentState()): ActorRef =
-    context.actorOf(AgentActor.props(agentState, migrationIsland, resultExchangeArena))
+  def newAgent(starting: RastriginSolution = startingSolution()): ActorRef =
+    context.actorOf(AgentActor.props(starting, migrationIsland, resultExchangeArena))
 
-
-  def randomAgentState(): AgentState = FakeAgentState(UUID.randomUUID().toString)
+  //todo hardcoded
+  private def startingSolution(): RastriginSolution = RastriginSolution(0)
 }
 
 object IslandActor {
   def props(neighbours: List[ActorSelection] = List(), workers: Int = 3): Props =
     Props(new IslandActor(neighbours, workers))
-
-  case class FakeAgentState(id: String) extends AgentState[FakeAgentState] {
-    override def betterThan(another: FakeAgentState): Boolean = true
-  }
 }
+
 

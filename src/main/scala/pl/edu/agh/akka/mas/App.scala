@@ -4,7 +4,6 @@ import akka.actor.{ActorRef, ActorSystem}
 import com.typesafe.config.ConfigFactory
 import pl.edu.agh.akka.mas.cluster.management.IslandTopologyCoordinator
 import pl.edu.agh.akka.mas.island.IslandActor
-import pl.edu.agh.akka.mas.problems.{RastriginAgent, RastriginIsland}
 
 /**
   * Created by novy on 06.04.16.
@@ -27,7 +26,7 @@ object App {
       // Create an Akka system
       val system = ActorSystem("ClusterSystem", config)
       // Create an actor that handles cluster domain events
-      val island: ActorRef = system.actorOf(RastriginIsland.props(), name = "island")
+      val island: ActorRef = system.actorOf(IslandActor.props(), name = "island")
       system.actorOf(IslandTopologyCoordinator.props(island), name = "islandCoordinator")
     }
   }

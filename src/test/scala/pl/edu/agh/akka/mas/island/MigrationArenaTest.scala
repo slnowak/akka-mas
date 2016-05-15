@@ -4,7 +4,8 @@ import akka.actor.{ActorRef, ActorSelection, ActorSystem}
 import akka.testkit._
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, WordSpecLike}
 import pl.edu.agh.akka.mas.island.AgentActor.JoinArena
-import pl.edu.agh.akka.mas.island.MigrationArena.{AgentState, CreateNewAgents}
+import pl.edu.agh.akka.mas.island.MigrationArena.CreateNewAgents
+import pl.edu.agh.akka.mas.problems.RastriginAgent.RastriginSolution
 
 /**
   * Created by novy on 10.04.16.
@@ -38,11 +39,11 @@ class MigrationArenaTest extends TestKit(ActorSystem()) with WordSpecLike with B
 
     "ask random neighbour to create new agents if migration started" in {
       // given
-      val firstAgentState: AgentState = randomAgentState()
+      val firstAgentState: RastriginSolution = randomAgentState()
       objectUnderTest ! JoinArena(firstAgentState)
 
       // when
-      val secondAgentState: AgentState = randomAgentState()
+      val secondAgentState: RastriginSolution = randomAgentState()
       objectUnderTest ! JoinArena(secondAgentState)
 
       // then
@@ -59,11 +60,11 @@ class MigrationArenaTest extends TestKit(ActorSystem()) with WordSpecLike with B
       val secondAgentWatcher = TestProbe()
       secondAgentWatcher watch secondAgent.ref
 
-      val firstAgentState: AgentState = randomAgentState()
+      val firstAgentState: RastriginSolution = randomAgentState()
       firstAgent.send(objectUnderTest, JoinArena(firstAgentState))
 
       // when
-      val secondAgentState: AgentState = randomAgentState()
+      val secondAgentState: RastriginSolution = randomAgentState()
       secondAgent.send(objectUnderTest, JoinArena(secondAgentState))
 
       // then
@@ -72,7 +73,5 @@ class MigrationArenaTest extends TestKit(ActorSystem()) with WordSpecLike with B
     }
   }
 
-  private def randomAgentState(): AgentState = {
-    new AgentState {}
-  }
+  private def randomAgentState(): RastriginSolution = RastriginSolution(666)
 }
