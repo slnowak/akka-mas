@@ -9,7 +9,7 @@ import scala.concurrent.duration._
 /**
   * Created by ania on 5/8/16.
   */
-class RastriginAgent(state: RastriginSolution, migrationArena: ActorRef, resultExchangeArena: ActorRef) extends AgentActor(state, migrationArena, resultExchangeArena) {
+class RastriginAgent(state: RastriginSolution, island: ActorRef) extends AgentActor(state, island) {
 
   import context.dispatcher
 
@@ -30,8 +30,8 @@ class RastriginAgent(state: RastriginSolution, migrationArena: ActorRef, resultE
 }
 
 object RastriginAgent {
-  def props(agentState: RastriginSolution, migrationArena: ActorRef, resultExchangeArena: ActorRef): Props =
-    Props(new RastriginAgent(agentState, migrationArena, resultExchangeArena))
+  def props(agentState: RastriginSolution, island: ActorRef): Props =
+    Props(new RastriginAgent(agentState, island))
 
   case class RastriginSolution(result: Float) {
     def betterThan(another: RastriginSolution): Boolean = result > another.result
