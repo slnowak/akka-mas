@@ -3,9 +3,10 @@ package pl.edu.agh.akka.mas.island
 import akka.actor.{ActorRef, ActorSelection, ActorSystem}
 import akka.testkit._
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, WordSpecLike}
-import pl.edu.agh.akka.mas.island.AgentActor.RequestMigration
+import pl.edu.agh.akka.mas.island.AgentActor.{RequestMigration, RastriginSolution}
+
 import pl.edu.agh.akka.mas.island.MigrationArena.{KillAgents, SpawnNewAgents}
-import pl.edu.agh.akka.mas.problems.RastriginAgent.RastriginSolution
+
 
 /**
   * Created by novy on 10.04.16.
@@ -73,5 +74,5 @@ class MigrationArenaTest extends TestKit(ActorSystem()) with WordSpecLike with B
     }
   }
 
-  private def exampleSolution(): RastriginSolution = RastriginSolution(666)
+  private def exampleSolution(): RastriginSolution = RastriginSolution(Array(66, 11, 22))
 }

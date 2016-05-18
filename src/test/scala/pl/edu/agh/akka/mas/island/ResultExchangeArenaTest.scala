@@ -4,14 +4,14 @@ import akka.actor.{ActorRef, ActorSelection, ActorSystem}
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, WordSpecLike}
 import pl.edu.agh.akka.mas.cluster.management.IslandTopologyCoordinator.NeighboursChanged
+import pl.edu.agh.akka.mas.island.AgentActor.RastriginSolution
 import pl.edu.agh.akka.mas.island.ResultExchangeArena.{BestSolutionQuery, GlobalSolution, NewGlobalSolution, NewLocalSolution}
-import pl.edu.agh.akka.mas.problems.RastriginAgent.RastriginSolution
 
 /**
   * Created by novy on 13.04.16.
   */
 class ResultExchangeArenaTest extends TestKit(ActorSystem()) with WordSpecLike with BeforeAndAfterEach with BeforeAndAfterAll with ImplicitSender {
-  val STARTING_SOLUTION = RastriginSolution(0)
+  val STARTING_SOLUTION = RastriginSolution(Array(2, 3, 4))
 
   var objectUnderTest: ActorRef = _
   var soleNeighbour: TestProbe = _
@@ -42,7 +42,7 @@ class ResultExchangeArenaTest extends TestKit(ActorSystem()) with WordSpecLike w
       val firstWorker: TestProbe = TestProbe()
 
       // when
-      val betterLocalSolution: NewLocalSolution = localSolutionWith(666)
+      val betterLocalSolution: NewLocalSolution = localSolutionWith(Array(0, 0, 0))
       firstWorker.send(objectUnderTest, betterLocalSolution)
 
       // then
@@ -61,17 +61,17 @@ class ResultExchangeArenaTest extends TestKit(ActorSystem()) with WordSpecLike w
       )
 
       // when
-      testProbe.send(objectUnderTest, localSolutionWith(STARTING_SOLUTION.result + 1))
+      testProbe.send(objectUnderTest, localSolutionWith(Array(0,0,0)))
 
       // then
-      val expectedGlobalSolution = globalSolutionWith(objectUnderTest, STARTING_SOLUTION.result + 1)
+      val expectedGlobalSolution = globalSolutionWith(objectUnderTest, Array(0,0,0))
       newNeighbour1 expectMsg expectedGlobalSolution
       newNeighbour2 expectMsg expectedGlobalSolution
     }
 
     "don't forward anything to neighbours if solution is worse" in {
       // given
-      val worseSolution: NewLocalSolution = localSolutionWith(STARTING_SOLUTION.result - 666)
+      val worseSolution: NewLocalSolution = localSolutionWith(Array(0,0,0))
       testProbe.send(objectUnderTest, worseSolution)
 
       // when
@@ -83,7 +83,7 @@ class ResultExchangeArenaTest extends TestKit(ActorSystem()) with WordSpecLike w
 
     "update it's internal solution when new global arrives" in {
       // given
-      val newGlobalSolution: NewGlobalSolution = globalSolutionWith(soleNeighbour.ref, STARTING_SOLUTION.result + 1)
+      val newGlobalSolution: NewGlobalSolution = globalSolutionWith(soleNeighbour.ref, Array(0,0,0))
       testProbe.send(objectUnderTest, newGlobalSolution)
 
       // when
@@ -95,7 +95,7 @@ class ResultExchangeArenaTest extends TestKit(ActorSystem()) with WordSpecLike w
 
     "ignore global solution if it's worse" in {
       // given
-      val newGlobalSolution: NewGlobalSolution = globalSolutionWith(soleNeighbour.ref, STARTING_SOLUTION.result - 1)
+      val newGlobalSolution: NewGlobalSolution = globalSolutionWith(soleNeighbour.ref, Array(6, 721, 432))
       objectUnderTest ! newGlobalSolution
 
       // when
@@ -106,9 +106,9 @@ class ResultExchangeArenaTest extends TestKit(ActorSystem()) with WordSpecLike w
     }
   }
 
-  def localSolutionWith(value: Float): NewLocalSolution = NewLocalSolution(RastriginSolution(value))
+  def localSolutionWith(value: Array[Double]): NewLocalSolution = NewLocalSolution(RastriginSolution(value))
 
-  def globalSolutionWith(senderIsland: ActorRef, value: Float): NewGlobalSolution = NewGlobalSolution(GlobalSolution(senderIsland, RastriginSolution(value)))
+  def globalSolutionWith(senderIsland: ActorRef, value: Array[Double]): NewGlobalSolution = NewGlobalSolution(GlobalSolution(senderIsland, RastriginSolution(value)))
 
   override protected def afterAll(): Unit = system.terminate()
 }

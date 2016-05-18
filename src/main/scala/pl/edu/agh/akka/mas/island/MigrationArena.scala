@@ -2,9 +2,8 @@ package pl.edu.agh.akka.mas.island
 
 import akka.actor._
 import pl.edu.agh.akka.mas.cluster.management.IslandTopologyCoordinator.NeighboursChanged
-import pl.edu.agh.akka.mas.island.AgentActor.RequestMigration
+import pl.edu.agh.akka.mas.island.AgentActor.{RequestMigration, RastriginSolution}
 import pl.edu.agh.akka.mas.island.MigrationArena.{Agent, KillAgents, SpawnNewAgents}
-import pl.edu.agh.akka.mas.problems.RastriginAgent.RastriginSolution
 
 import scala.util.Random
 

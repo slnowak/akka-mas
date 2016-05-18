@@ -3,12 +3,12 @@ package pl.edu.agh.akka.mas.island
 import akka.actor.SupervisorStrategy.Restart
 import akka.actor._
 import pl.edu.agh.akka.mas.cluster.management.IslandTopologyCoordinator.NeighboursChanged
-import pl.edu.agh.akka.mas.island.AgentActor.{ExchangeResult, RequestMigration}
+import pl.edu.agh.akka.mas.island.AgentActor.{ExchangeResult, RastriginSolution, RequestMigration}
 import pl.edu.agh.akka.mas.island.MigrationArena.{KillAgents, SpawnNewAgents}
-import pl.edu.agh.akka.mas.problems.RastriginAgent.RastriginSolution
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
+import scala.util.Random
 
 /**
   * Created by novy on 09.04.16.
@@ -18,7 +18,9 @@ class IslandActor(var neighbours: List[ActorSelection], workers: Int) extends Ac
   val migrationArena: ActorRef = createMigrationArena()
   val resultExchangeArena: ActorRef = createResultExchangeArena()
   var problemWorkers: Set[ActorRef] = initialWorkers()
+  val problemSize = 100
 
+  def random = RandomComponent.randomData
 
   // todo fix it later
   override val supervisorStrategy =
@@ -33,27 +35,21 @@ class IslandActor(var neighbours: List[ActorSelection], workers: Int) extends Ac
     context.system.scheduler.schedule(10 seconds, 10 seconds, self, "share_system_info")
   }
 
-  override def receive: Receive = handleNeighbourhoodChanges orElse handleWorkersLifecycle orElse handleWorkersRequests
-
-  private def handleNeighbourhoodChanges: Receive = {
+  override def receive: Receive = {
     case msg@NeighboursChanged(newNeighbours) =>
       this.neighbours = newNeighbours
       migrationArena forward msg
       resultExchangeArena forward msg
-  }
 
-  private def handleWorkersLifecycle: Receive = {
     case SpawnNewAgents(initialSolution) =>
       log.info(s"got request to create new workers from ${sender()}, with data: $initialSolution")
       val newWorkers: List[ActorRef] = initialSolution map spawnAgent
-      problemWorkers ++= newWorkers
+       problemWorkers ++= newWorkers
 
     case KillAgents(agentAddresses) =>
       agentAddresses foreach killAgent
       problemWorkers --= agentAddresses
-  }
 
-  private def handleWorkersRequests: Receive = {
     case msg@RequestMigration =>
       migrationArena forward msg
 
@@ -78,8 +74,9 @@ class IslandActor(var neighbours: List[ActorSelection], workers: Int) extends Ac
   private def spawnAgent(startingSolution: RastriginSolution): ActorRef =
     context.actorOf(AgentActor.props(startingSolution, island = self))
 
-  // todo hardcoded
-  private def startingSolution(): RastriginSolution = RastriginSolution(0)
+  private def startingSolution(): RastriginSolution = {
+    RastriginSolution(Array.fill(problemSize)(random.nextUniform(-50.0, 50.0)))
+  }
 }
 
 object IslandActor {
