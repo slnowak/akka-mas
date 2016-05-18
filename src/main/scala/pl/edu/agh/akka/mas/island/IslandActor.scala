@@ -8,17 +8,17 @@ import pl.edu.agh.akka.mas.island.MigrationArena.{KillAgents, SpawnNewAgents}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-import scala.util.Random
 
 /**
   * Created by novy on 09.04.16.
   */
 class IslandActor(var neighbours: List[ActorSelection], workers: Int) extends Actor with ActorLogging {
 
+  val problemSize = 5
+
   val migrationArena: ActorRef = createMigrationArena()
   val resultExchangeArena: ActorRef = createResultExchangeArena()
   var problemWorkers: Set[ActorRef] = initialWorkers()
-  val problemSize = 100
 
   def random = RandomComponent.randomData
 
@@ -44,7 +44,7 @@ class IslandActor(var neighbours: List[ActorSelection], workers: Int) extends Ac
     case SpawnNewAgents(initialSolution) =>
       log.info(s"got request to create new workers from ${sender()}, with data: $initialSolution")
       val newWorkers: List[ActorRef] = initialSolution map spawnAgent
-       problemWorkers ++= newWorkers
+      problemWorkers ++= newWorkers
 
     case KillAgents(agentAddresses) =>
       agentAddresses foreach killAgent
@@ -74,9 +74,13 @@ class IslandActor(var neighbours: List[ActorSelection], workers: Int) extends Ac
   private def spawnAgent(startingSolution: RastriginSolution): ActorRef =
     context.actorOf(AgentActor.props(startingSolution, island = self))
 
-  private def startingSolution(): RastriginSolution = {
-    RastriginSolution(Array.fill(problemSize)(random.nextUniform(-50.0, 50.0)))
-  }
+  private def startingSolution(): RastriginSolution =
+    RastriginSolution(
+      Array.fill(problemSize) {
+        random.nextUniform(-5.12, 5.12)
+      }
+    )
+
 }
 
 object IslandActor {
