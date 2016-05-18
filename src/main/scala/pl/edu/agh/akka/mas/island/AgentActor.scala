@@ -23,7 +23,7 @@ class AgentActor(var state: RastriginSolution, island: ActorRef) extends Actor w
     context.system.scheduler.schedule(10 seconds, 10 seconds, self, "migrate")
     context.system.scheduler.schedule(10 seconds, 20 second, self, "exchange result")
     context.system.scheduler.scheduleOnce(10 seconds, self, "transform")
-    log.info(s"${state.evaluate()}")
+    log.info(s"Got result ${state.evaluate()}")
   }
 
   override def receive: Receive = {
