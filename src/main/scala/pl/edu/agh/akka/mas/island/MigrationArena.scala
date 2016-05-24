@@ -2,8 +2,9 @@ package pl.edu.agh.akka.mas.island
 
 import akka.actor._
 import pl.edu.agh.akka.mas.cluster.management.IslandTopologyCoordinator.NeighboursChanged
-import pl.edu.agh.akka.mas.island.AgentActor.{RequestMigration, RastriginSolution}
 import pl.edu.agh.akka.mas.island.MigrationArena.{Agent, KillAgents, SpawnNewAgents}
+import pl.edu.agh.akka.mas.island.rastrigin.AgentActor.RequestMigration
+import pl.edu.agh.akka.mas.island.rastrigin.{AgentActor, RastriginFeature}
 
 import scala.util.Random
 
@@ -19,18 +20,18 @@ class MigrationArena(var neighbourIslands: List[ActorSelection], thisIsland: Act
     case NeighboursChanged(newNeighbours) =>
       this.neighbourIslands = newNeighbours
 
-    case RequestMigration(solution) if enoughAgentsGathered() =>
+    case RequestMigration(feature) if enoughAgentsGathered() =>
       log.info(s"$self: starting migration with agents: $agentsToMigrate to random neighbour from: $neighbourIslands")
-      agentsToMigrate = Agent(solution, sender()) :: agentsToMigrate
+      agentsToMigrate = Agent(feature, sender()) :: agentsToMigrate
       randomNeighbour() foreach migrate(agentsToMigrate reverse)
       agentsToMigrate = List.empty
 
-    case RequestMigration(agentState) =>
-      agentsToMigrate = Agent(agentState, sender()) :: agentsToMigrate
+    case RequestMigration(feature) =>
+      agentsToMigrate = Agent(feature, sender()) :: agentsToMigrate
   }
 
   private def migrate(agentsToMigrate: List[Agent])(neighbour: ActorSelection): Unit = {
-    neighbour ! SpawnNewAgents(agentsToMigrate.map(_.solution))
+    neighbour ! SpawnNewAgents(agentsToMigrate.map(_.feature))
     thisIsland ! KillAgents(agentsToMigrate.map(_.agentActor))
   }
 
@@ -44,10 +45,10 @@ object MigrationArena {
   def props(neighbours: List[ActorSelection], relatedIsland: ActorRef, requiredAgentsToMigrate: Int = 3): Props =
     Props(new MigrationArena(neighbours, relatedIsland, requiredAgentsToMigrate))
 
-  case class SpawnNewAgents(initialSolutions: List[RastriginSolution])
+  case class SpawnNewAgents(initialFeatures: List[RastriginFeature])
 
   case class KillAgents(addresses: List[ActorRef])
 
-  case class Agent(solution: RastriginSolution, agentActor: ActorRef)
+  case class Agent(feature: RastriginFeature, agentActor: ActorRef)
 
 }

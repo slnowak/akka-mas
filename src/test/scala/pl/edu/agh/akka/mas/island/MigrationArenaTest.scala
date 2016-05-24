@@ -3,9 +3,9 @@ package pl.edu.agh.akka.mas.island
 import akka.actor.{ActorRef, ActorSelection, ActorSystem}
 import akka.testkit._
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, WordSpecLike}
-import pl.edu.agh.akka.mas.island.AgentActor.{RequestMigration, RastriginSolution}
-
 import pl.edu.agh.akka.mas.island.MigrationArena.{KillAgents, SpawnNewAgents}
+import pl.edu.agh.akka.mas.island.rastrigin.AgentActor.RequestMigration
+import pl.edu.agh.akka.mas.island.rastrigin.RastriginFeature
 
 
 /**
@@ -37,7 +37,7 @@ class MigrationArenaTest extends TestKit(ActorSystem()) with WordSpecLike with B
 
     "not send any message if migration threshold not exceeded" in {
       // when
-      testProbe.send(objectUnderTest, RequestMigration(exampleSolution()))
+      testProbe.send(objectUnderTest, RequestMigration(exampleFeature()))
 
       // then
       relatedIsland expectNoMsg()
@@ -46,33 +46,33 @@ class MigrationArenaTest extends TestKit(ActorSystem()) with WordSpecLike with B
 
     "ask random neighbour to create new agents if migration started" in {
       // given
-      val firstAgentSolution: RastriginSolution = exampleSolution()
-      objectUnderTest ! RequestMigration(firstAgentSolution)
+      val firstAgentFeature: RastriginFeature = exampleFeature()
+      objectUnderTest ! RequestMigration(firstAgentFeature)
 
       // when
-      val secondAgentSolution: RastriginSolution = exampleSolution()
-      objectUnderTest ! RequestMigration(secondAgentSolution)
+      val secondAgentFeature: RastriginFeature = exampleFeature()
+      objectUnderTest ! RequestMigration(secondAgentFeature)
 
       // then
-      soleNeighbour expectMsg SpawnNewAgents(List(firstAgentSolution, secondAgentSolution))
+      soleNeighbour expectMsg SpawnNewAgents(List(firstAgentFeature, secondAgentFeature))
     }
 
-    "kill request killing agents on related island if migration started" in {
+    "request killing agents on related island if migration started" in {
       // given
       val firstAgent = TestProbe()
       val secondAgent = TestProbe()
 
-      val firstAgentState: RastriginSolution = exampleSolution()
-      firstAgent.send(objectUnderTest, RequestMigration(firstAgentState))
+      val firstAgentFeature: RastriginFeature = exampleFeature()
+      firstAgent.send(objectUnderTest, RequestMigration(firstAgentFeature))
 
       // when
-      val secondAgentState: RastriginSolution = exampleSolution()
-      secondAgent.send(objectUnderTest, RequestMigration(secondAgentState))
+      val secondAgentFeature: RastriginFeature = exampleFeature()
+      secondAgent.send(objectUnderTest, RequestMigration(secondAgentFeature))
 
       // then
       relatedIsland expectMsg KillAgents(List(firstAgent.ref, secondAgent.ref))
     }
   }
 
-  private def exampleSolution(): RastriginSolution = RastriginSolution(Array(66, 11, 22))
+  private def exampleFeature(): RastriginFeature = RastriginFeature(Array(66, 11, 22))
 }

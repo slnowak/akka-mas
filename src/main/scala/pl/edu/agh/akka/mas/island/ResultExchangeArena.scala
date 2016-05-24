@@ -3,7 +3,7 @@ package pl.edu.agh.akka.mas.island
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSelection, Props}
 import pl.edu.agh.akka.mas.cluster.management.IslandTopologyCoordinator.NeighboursChanged
 import pl.edu.agh.akka.mas.island.ResultExchangeArena.{BestSolutionQuery, GlobalSolution, NewGlobalSolution, NewLocalSolution}
-import pl.edu.agh.akka.mas.island.AgentActor.RastriginSolution
+import pl.edu.agh.akka.mas.island.rastrigin.RastriginSolution
 
 /**
   * Created by novy on 13.04.16.

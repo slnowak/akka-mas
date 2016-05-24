@@ -3,8 +3,9 @@ package pl.edu.agh.akka.mas.island
 import akka.actor.SupervisorStrategy.Restart
 import akka.actor._
 import pl.edu.agh.akka.mas.cluster.management.IslandTopologyCoordinator.NeighboursChanged
-import pl.edu.agh.akka.mas.island.AgentActor.{ExchangeResult, RastriginSolution, RequestMigration}
 import pl.edu.agh.akka.mas.island.MigrationArena.{KillAgents, SpawnNewAgents}
+import pl.edu.agh.akka.mas.island.rastrigin.AgentActor.{ExchangeResult, RequestMigration}
+import pl.edu.agh.akka.mas.island.rastrigin._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
@@ -69,18 +70,19 @@ class IslandActor(var neighbours: List[ActorSelection], workers: Int) extends Ac
 
   private def killAgent(agent: ActorRef): Unit = agent ! PoisonPill
 
-  private def spawnAgent(): ActorRef = spawnAgent(startingSolution())
+  private def spawnAgent(): ActorRef = spawnAgent(startingFeature())
 
-  private def spawnAgent(startingSolution: RastriginSolution): ActorRef =
-    context.actorOf(AgentActor.props(startingSolution, island = self))
+  private def spawnAgent(startingFeature: RastriginFeature): ActorRef =
+    context.actorOf(AgentActor.props(startingFeature, new RastriginProblem(), island = self))
 
-  private def startingSolution(): RastriginSolution =
-    RastriginSolution(
+  private def startingFeature(): RastriginFeature =
+    RastriginFeature(
       Array.fill(problemSize) {
         random.nextUniform(-5.12, 5.12)
       }
     )
 
+  private def startingSolution(): RastriginSolution = RastriginSolution(Double.MaxValue)
 }
 
 object IslandActor {
