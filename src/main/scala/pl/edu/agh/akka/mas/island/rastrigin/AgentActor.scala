@@ -1,11 +1,10 @@
 package pl.edu.agh.akka.mas.island.rastrigin
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import org.apache.commons.math3.random.{RandomDataGenerator, RandomGenerator, Well19937c}
-import pl.edu.agh.akka.mas.island.rastrigin.AgentActor.{ExchangeResult, RequestMigration}
+import pl.edu.agh.akka.mas.island.MutationArena.ApplyNewFeature
+import pl.edu.agh.akka.mas.island.rastrigin.AgentActor._
 
 import scala.concurrent.duration._
-import scala.util.Random
 
 /**
   * Created by novy on 10.04.16.
@@ -17,62 +16,50 @@ class AgentActor(var feature: RastriginFeature,
 
   import context.dispatcher
 
-  def random = RandomComponent.randomData
-
-  val mutationChance = 0.75
-  val mutationRate = 0.1
-
   override def preStart(): Unit = {
-    context.system.scheduler.schedule(10 seconds, 10 seconds, self, "migrate")
-    context.system.scheduler.schedule(10 seconds, 20 second, self, "exchange result")
-    context.system.scheduler.scheduleOnce(10 seconds, self, "transform")
+    context.system.scheduler.schedule(10 seconds, 10 seconds, self, Calculate)
+    context.system.scheduler.schedule(10 seconds, 20 second, self, Migrate)
+    context.system.scheduler.schedule(10 seconds, 20 seconds, self, Mutate)
   }
 
-  override def receive: Receive = {
-    case "migrate" =>
-      island ! RequestMigration(feature)
+  override def receive: Receive = handlePeriodicTasks() orElse updateFeatures()
 
-    case "exchange result" =>
+  private def handlePeriodicTasks(): Receive = {
+    case Calculate =>
       val solution: RastriginSolution = problem.evaluate(feature)
-      log.info(s"Exchanging result ${solution}")
+      log.info(s"Exchanging result $solution")
       island ! ExchangeResult(solution)
 
-    case "transform" =>
-      feature = transform(feature)
+    case Migrate =>
+      island ! RequestMigration(feature)
+
+    case Mutate =>
+      island ! RequestMutation
   }
 
-  def transform(feature: RastriginFeature): RastriginFeature = mutateFeature(feature)
-
-  def mutateFeature(feature: RastriginFeature): RastriginFeature =
-    if (Random.nextDouble() < mutationChance)
-      RastriginFeature(feature.coordinates.map(f => if (Random.nextDouble() < mutationRate) mutateElement(f) else f))
-    else
-      feature
-
-  def mutateElement(f: Double): Double = {
-    val range = Random.nextDouble() match {
-      case x if x < 0.2 => 5.0
-      case x if x < 0.4 => 0.2
-      case _ => 1.0
-    }
-
-    f + range * random.nextCauchy(0.0, 1.0)
+  private def updateFeatures(): Receive = {
+    case ApplyNewFeature(newFeature) =>
+      this.feature = newFeature
   }
-
 }
 
 object AgentActor {
   def props(feature: RastriginFeature, problem: RastriginProblem, island: ActorRef): Props =
     Props(new AgentActor(feature, problem, island))
 
+  sealed trait PeriodicTask
+
+  case object Calculate extends PeriodicTask
+
+  case object Migrate extends PeriodicTask
+
+  case object Mutate extends PeriodicTask
+
+
+  case class RequestMutation(feature: RastriginFeature)
+
   case class RequestMigration(feature: RastriginFeature)
 
   case class ExchangeResult(solution: RastriginSolution)
 
-}
-
-object RandomComponent {
-  def randomGeneratorFactory(seed: Long): RandomGenerator = new Well19937c(seed)
-
-  lazy val randomData = new RandomDataGenerator(randomGeneratorFactory(System.currentTimeMillis()))
 }

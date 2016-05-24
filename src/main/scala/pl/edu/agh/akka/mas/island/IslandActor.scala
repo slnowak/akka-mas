@@ -3,12 +3,14 @@ package pl.edu.agh.akka.mas.island
 import akka.actor.SupervisorStrategy.Restart
 import akka.actor._
 import pl.edu.agh.akka.mas.cluster.management.IslandTopologyCoordinator.NeighboursChanged
-import pl.edu.agh.akka.mas.island.MigrationArena.{KillAgents, SpawnNewAgents}
-import pl.edu.agh.akka.mas.island.rastrigin.AgentActor.{ExchangeResult, RequestMigration}
+import pl.edu.agh.akka.mas.island.MigrationArena.{Agent, KillAgents, SpawnNewAgents}
+import pl.edu.agh.akka.mas.island.MutationArena.Mutate
+import pl.edu.agh.akka.mas.island.rastrigin.AgentActor.{ExchangeResult, RequestMigration, RequestMutation}
 import pl.edu.agh.akka.mas.island.rastrigin._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
+import scala.util.Random
 
 /**
   * Created by novy on 09.04.16.
@@ -19,9 +21,8 @@ class IslandActor(var neighbours: List[ActorSelection], workers: Int) extends Ac
 
   val migrationArena: ActorRef = createMigrationArena()
   val resultExchangeArena: ActorRef = createResultExchangeArena()
+  val mutationArena: ActorRef = createMutationArena()
   var problemWorkers: Set[ActorRef] = initialWorkers()
-
-  def random = RandomComponent.randomData
 
   // todo fix it later
   override val supervisorStrategy =
@@ -31,17 +32,20 @@ class IslandActor(var neighbours: List[ActorSelection], workers: Int) extends Ac
         Restart
     }
 
-
   override def preStart(): Unit = {
     context.system.scheduler.schedule(10 seconds, 10 seconds, self, "share_system_info")
   }
 
-  override def receive: Receive = {
+  override def receive(): Receive = handleNeighbourhoodChanges orElse handleWorkersLifecycle orElse handleWorkersRequests
+
+  private def handleNeighbourhoodChanges: Receive = {
     case msg@NeighboursChanged(newNeighbours) =>
       this.neighbours = newNeighbours
       migrationArena forward msg
       resultExchangeArena forward msg
+  }
 
+  private def handleWorkersLifecycle: Receive = {
     case SpawnNewAgents(initialSolution) =>
       log.info(s"got request to create new workers from ${sender()}, with data: $initialSolution")
       val newWorkers: List[ActorRef] = initialSolution map spawnAgent
@@ -50,18 +54,27 @@ class IslandActor(var neighbours: List[ActorSelection], workers: Int) extends Ac
     case KillAgents(agentAddresses) =>
       agentAddresses foreach killAgent
       problemWorkers --= agentAddresses
+  }
 
+  private def handleWorkersRequests: Receive = {
     case msg@RequestMigration =>
       migrationArena forward msg
 
     case msg@ExchangeResult =>
       resultExchangeArena forward msg
+
+    case RequestMutation(feature) =>
+      mutationArena ! Mutate(Agent(feature, sender()))
   }
 
   private def createMigrationArena(): ActorRef = context.actorOf(MigrationArena.props(neighbours, self, 2))
 
   private def createResultExchangeArena(): ActorRef = context.actorOf(
     ResultExchangeArena.props(neighbours, startingSolution())
+  )
+
+  private def createMutationArena(): ActorRef = context.actorOf(
+    MutationArena.props()
   )
 
   private def initialWorkers(): Set[ActorRef] = {
@@ -76,9 +89,10 @@ class IslandActor(var neighbours: List[ActorSelection], workers: Int) extends Ac
     context.actorOf(AgentActor.props(startingFeature, new RastriginProblem(), island = self))
 
   private def startingFeature(): RastriginFeature =
+  //  todo should be random form -5.12, 5.12, fix it. Also, dont use global
     RastriginFeature(
       Array.fill(problemSize) {
-        random.nextUniform(-5.12, 5.12)
+        Random.nextDouble()
       }
     )
 

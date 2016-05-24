@@ -4,7 +4,7 @@ import akka.actor._
 import pl.edu.agh.akka.mas.cluster.management.IslandTopologyCoordinator.NeighboursChanged
 import pl.edu.agh.akka.mas.island.MigrationArena.{Agent, KillAgents, SpawnNewAgents}
 import pl.edu.agh.akka.mas.island.rastrigin.AgentActor.RequestMigration
-import pl.edu.agh.akka.mas.island.rastrigin.{AgentActor, RastriginFeature}
+import pl.edu.agh.akka.mas.island.rastrigin.RastriginFeature
 
 import scala.util.Random
 
@@ -49,6 +49,7 @@ object MigrationArena {
 
   case class KillAgents(addresses: List[ActorRef])
 
+  //  todo move
   case class Agent(feature: RastriginFeature, agentActor: ActorRef)
 
 }
