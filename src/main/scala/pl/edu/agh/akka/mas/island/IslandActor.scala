@@ -2,6 +2,8 @@ package pl.edu.agh.akka.mas.island
 
 import akka.actor.SupervisorStrategy.Restart
 import akka.actor._
+import org.apache.commons.math3.random.RandomDataGenerator
+import pl.edu.agh.akka.mas.UglyStaticGlobalRandomGenerator
 import pl.edu.agh.akka.mas.cluster.management.IslandTopologyCoordinator.NeighboursChanged
 import pl.edu.agh.akka.mas.island.MigrationArena.{Agent, KillAgents, SpawnNewAgents}
 import pl.edu.agh.akka.mas.island.MutationArena.Mutate
@@ -15,7 +17,7 @@ import scala.util.Random
 /**
   * Created by novy on 09.04.16.
   */
-class IslandActor(var neighbours: List[ActorSelection], workers: Int) extends Actor with ActorLogging {
+class IslandActor(var neighbours: List[ActorSelection], random: RandomDataGenerator, workers: Int) extends Actor with ActorLogging {
 
   val problemSize = 5
 
@@ -89,10 +91,9 @@ class IslandActor(var neighbours: List[ActorSelection], workers: Int) extends Ac
     context.actorOf(AgentActor.props(startingFeature, new RastriginProblem(), island = self))
 
   private def startingFeature(): RastriginFeature =
-  //  todo should be random form -5.12, 5.12, fix it. Also, dont use global
     RastriginFeature(
       Array.fill(problemSize) {
-        Random.nextDouble()
+        random.nextUniform(-5.12, 5.12)
       }
     )
 
@@ -100,8 +101,10 @@ class IslandActor(var neighbours: List[ActorSelection], workers: Int) extends Ac
 }
 
 object IslandActor {
-  def props(neighbours: List[ActorSelection] = List(), workers: Int = 3): Props =
-    Props(new IslandActor(neighbours, workers))
+  def props(neighbours: List[ActorSelection] = List(),
+            random: RandomDataGenerator = UglyStaticGlobalRandomGenerator.defaultRandomGenerator(),
+            workers: Int = 3): Props =
+    Props(new IslandActor(neighbours, random, workers))
 }
 
 

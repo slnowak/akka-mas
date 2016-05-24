@@ -1,6 +1,7 @@
 package pl.edu.agh.akka.mas.island
 
-import org.apache.commons.math3.random.{RandomDataGenerator, Well19937c}
+import org.apache.commons.math3.random.RandomDataGenerator
+import pl.edu.agh.akka.mas.UglyStaticGlobalRandomGenerator
 import pl.edu.agh.akka.mas.island.ProbabilisticMutationStrategy.MutationParams
 import pl.edu.agh.akka.mas.island.rastrigin.RastriginFeature
 
@@ -32,18 +33,14 @@ class ProbabilisticMutationStrategy(random: RandomDataGenerator, params: Mutatio
   }
 
   private def probability(): Double = {
-    random.nextCauchy(0.0, 1.0)
+    random.nextUniform(0.0, 1.0)
   }
 }
 
 object ProbabilisticMutationStrategy {
 
   def apply(mutationParams: MutationParams): ProbabilisticMutationStrategy = new ProbabilisticMutationStrategy(
-    defaultRandomGenerator(), mutationParams
-  )
-
-  def defaultRandomGenerator(): RandomDataGenerator = new RandomDataGenerator(
-    new Well19937c(System.currentTimeMillis())
+    UglyStaticGlobalRandomGenerator.defaultRandomGenerator(), mutationParams
   )
 
   case class MutationParams(mutationChance: Double, mutationRate: Double)
