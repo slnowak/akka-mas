@@ -20,6 +20,7 @@ class AgentActor(var feature: RastriginFeature,
     context.system.scheduler.schedule(10 seconds, 10 seconds, self, Calculate)
     context.system.scheduler.schedule(10 seconds, 20 second, self, Migrate)
     context.system.scheduler.schedule(10 seconds, 20 seconds, self, Mutate)
+    context.system.scheduler.schedule(15 second, 20 seconds, self, Reproduce)
   }
 
   override def receive: Receive = handlePeriodicTasks() orElse updateFeatures()
@@ -35,6 +36,9 @@ class AgentActor(var feature: RastriginFeature,
 
     case Mutate =>
       island ! RequestMutation
+
+    case Reproduce =>
+      island ! RequestReproduction(feature)
   }
 
   private def updateFeatures(): Receive = {
@@ -55,10 +59,14 @@ object AgentActor {
 
   case object Mutate extends PeriodicTask
 
+  case object Reproduce extends PeriodicTask
+
 
   case class RequestMutation(feature: RastriginFeature)
 
   case class RequestMigration(feature: RastriginFeature)
+
+  case class RequestReproduction(feature: RastriginFeature)
 
   case class ExchangeResult(solution: RastriginSolution)
 

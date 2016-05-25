@@ -7,7 +7,7 @@ import pl.edu.agh.akka.mas.UglyStaticGlobalRandomGenerator
 import pl.edu.agh.akka.mas.cluster.management.IslandTopologyCoordinator.NeighboursChanged
 import pl.edu.agh.akka.mas.island.MigrationArena.{Agent, KillAgents, SpawnNewAgents}
 import pl.edu.agh.akka.mas.island.MutationArena.Mutate
-import pl.edu.agh.akka.mas.island.rastrigin.AgentActor.{ExchangeResult, RequestMigration, RequestMutation}
+import pl.edu.agh.akka.mas.island.rastrigin.AgentActor.{ExchangeResult, RequestMigration, RequestMutation, RequestReproduction}
 import pl.edu.agh.akka.mas.island.rastrigin._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -24,6 +24,7 @@ class IslandActor(var neighbours: List[ActorSelection], random: RandomDataGenera
   val migrationArena: ActorRef = createMigrationArena()
   val resultExchangeArena: ActorRef = createResultExchangeArena()
   val mutationArena: ActorRef = createMutationArena()
+  val reproductionArena: ActorRef = createReproductionArena()
   var problemWorkers: Set[ActorRef] = initialWorkers()
 
   // todo fix it later
@@ -67,6 +68,9 @@ class IslandActor(var neighbours: List[ActorSelection], random: RandomDataGenera
 
     case RequestMutation(feature) =>
       mutationArena ! Mutate(Agent(feature, sender()))
+
+    case msg@RequestReproduction =>
+      reproductionArena forward msg
   }
 
   private def createMigrationArena(): ActorRef = context.actorOf(MigrationArena.props(neighbours, self, 2))
@@ -77,6 +81,10 @@ class IslandActor(var neighbours: List[ActorSelection], random: RandomDataGenera
 
   private def createMutationArena(): ActorRef = context.actorOf(
     MutationArena.props()
+  )
+
+  private def createReproductionArena(): ActorRef = context.actorOf(
+    ReproductionArena.props(self)
   )
 
   private def initialWorkers(): Set[ActorRef] = {
