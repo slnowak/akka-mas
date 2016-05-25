@@ -12,19 +12,11 @@ import pl.edu.agh.akka.mas.island.rastrigin._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-import scala.util.Random
 
 /**
   * Created by novy on 09.04.16.
   */
 class IslandActor(var neighbours: List[ActorSelection], random: RandomDataGenerator, workers: Int) extends Actor with ActorLogging {
-
-  val problemSize = 5
-
-  val migrationArena: ActorRef = createMigrationArena()
-  val resultExchangeArena: ActorRef = createResultExchangeArena()
-  val mutationArena: ActorRef = createMutationArena()
-  var problemWorkers: Set[ActorRef] = initialWorkers()
 
   // todo fix it later
   override val supervisorStrategy =
@@ -33,6 +25,11 @@ class IslandActor(var neighbours: List[ActorSelection], random: RandomDataGenera
         log.warning("exception occurred")
         Restart
     }
+  val problemSize = 5
+  val migrationArena: ActorRef = createMigrationArena()
+  val resultExchangeArena: ActorRef = createResultExchangeArena()
+  val mutationArena: ActorRef = createMutationArena()
+  var problemWorkers: Set[ActorRef] = initialWorkers()
 
   override def preStart(): Unit = {
     context.system.scheduler.schedule(10 seconds, 10 seconds, self, "share_system_info")
@@ -58,6 +55,8 @@ class IslandActor(var neighbours: List[ActorSelection], random: RandomDataGenera
       problemWorkers --= agentAddresses
   }
 
+  private def killAgent(agent: ActorRef): Unit = agent ! PoisonPill
+
   private def handleWorkersRequests: Receive = {
     case msg@RequestMigration =>
       migrationArena forward msg
@@ -69,11 +68,14 @@ class IslandActor(var neighbours: List[ActorSelection], random: RandomDataGenera
       mutationArena ! Mutate(Agent(feature, sender()))
   }
 
-  private def createMigrationArena(): ActorRef = context.actorOf(MigrationArena.props(neighbours, self, 2))
+  private def createMigrationArena(): ActorRef =
+    context.actorOf(MigrationArena.props(neighbours, self, 2), "MigrationArena")
 
   private def createResultExchangeArena(): ActorRef = context.actorOf(
     ResultExchangeArena.props(neighbours, startingSolution())
   )
+
+  private def startingSolution(): RastriginSolution = RastriginSolution(Double.MaxValue)
 
   private def createMutationArena(): ActorRef = context.actorOf(
     MutationArena.props()
@@ -82,8 +84,6 @@ class IslandActor(var neighbours: List[ActorSelection], random: RandomDataGenera
   private def initialWorkers(): Set[ActorRef] = {
     (for (i <- 0 to workers) yield spawnAgent()) toSet
   }
-
-  private def killAgent(agent: ActorRef): Unit = agent ! PoisonPill
 
   private def spawnAgent(): ActorRef = spawnAgent(startingFeature())
 
@@ -96,8 +96,6 @@ class IslandActor(var neighbours: List[ActorSelection], random: RandomDataGenera
         random.nextUniform(-5.12, 5.12)
       }
     )
-
-  private def startingSolution(): RastriginSolution = RastriginSolution(Double.MaxValue)
 }
 
 object IslandActor {
