@@ -4,7 +4,7 @@ import akka.actor.{ActorRef, ActorSelection, ActorSystem}
 import akka.testkit._
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, WordSpecLike}
 import pl.edu.agh.akka.mas.island.MigrationArena.{KillAgents, SpawnNewAgents}
-import pl.edu.agh.akka.mas.island.rastrigin.AgentActor.RequestMigration
+import pl.edu.agh.akka.mas.island.rastrigin.Worker.RequestMigration
 import pl.edu.agh.akka.mas.island.rastrigin.RastriginFeature
 
 
