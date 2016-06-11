@@ -3,8 +3,9 @@ package pl.edu.agh.akka.mas.island
 import akka.actor.{ActorRef, ActorSelection, ActorSystem}
 import akka.testkit._
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, WordSpecLike}
-import pl.edu.agh.akka.mas.island.IslandActor.SpawnNewAgents
-import pl.edu.agh.akka.mas.island.MigrationArena.{Agent, PerformMigration}
+import pl.edu.agh.akka.mas.island.PopulationActor.SpawnNewAgents
+import pl.edu.agh.akka.mas.island.migration.MigrationArena
+import MigrationArena.{Agent, PerformMigration}
 import pl.edu.agh.akka.mas.island.rastrigin.RastriginFeature
 
 
@@ -25,8 +26,7 @@ class MigrationArenaTest extends TestKit(ActorSystem()) with WordSpecLike with B
 
     val containsOnlyOneNeighbour: List[ActorSelection] = List(system.actorSelection(soleNeighbour.ref.path))
     objectUnderTest = TestActorRef(MigrationArena.props(
-      neighbours = containsOnlyOneNeighbour,
-      relatedIsland = relatedIsland.ref
+      neighbours = containsOnlyOneNeighbour
     ))
   }
 

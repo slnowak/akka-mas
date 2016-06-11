@@ -9,7 +9,7 @@ import pl.edu.agh.akka.mas.cluster.management.topology.{Island, IslandTopology, 
 /**
   * Created by novy on 09.04.16.
   */
-class IslandTopologyCoordinator(var topology: IslandTopology, islandActor: ActorRef) extends Actor with ActorLogging {
+class IslandTopologyCoordinator(var topology: IslandTopology, subscribers: ActorSelection) extends Actor with ActorLogging {
 
   val cluster = Cluster(context.system)
   val thisIsland = Island(cluster.selfAddress)
@@ -21,19 +21,19 @@ class IslandTopologyCoordinator(var topology: IslandTopology, islandActor: Actor
   override def receive: Receive = {
     case MemberUp(member) =>
       addIslandToTopology(member.address)
-      notifyIslandActorAboutNeighbourhoodChange()
+      notifyAboutNeighbourhoodChange()
 
     case ReachableMember(member) =>
       addIslandToTopology(member.address)
-      notifyIslandActorAboutNeighbourhoodChange()
+      notifyAboutNeighbourhoodChange()
 
     case UnreachableMember(member) =>
       removeIslandFromTopology(member.address)
-      notifyIslandActorAboutNeighbourhoodChange()
+      notifyAboutNeighbourhoodChange()
 
     case MemberRemoved(member, _) =>
       removeIslandFromTopology(member.address)
-      notifyIslandActorAboutNeighbourhoodChange()
+      notifyAboutNeighbourhoodChange()
   }
 
   private def addIslandToTopology(islandAddress: Address): Unit = {
@@ -44,12 +44,12 @@ class IslandTopologyCoordinator(var topology: IslandTopology, islandActor: Actor
     topology = topology.withoutExisting(Island(islandAddress))
   }
 
-  private def notifyIslandActorAboutNeighbourhoodChange(): Unit = {
-    islandActor ! NeighboursChanged(topology.neighboursOf(thisIsland).map(toActorSelection))
+  private def notifyAboutNeighbourhoodChange(): Unit = {
+    subscribers ! NeighboursChanged(topology.neighboursOf(thisIsland).map(toActorSelection))
   }
 
   private def toActorSelection(island: Island): ActorSelection = {
-    context.actorSelection(s"akka.tcp://${island.islandAddress.hostPort}/user/island")
+    context.actorSelection(s"akka.tcp://${island.islandAddress.hostPort}/user/island/*")
   }
 
   private def subscribeToClusterChanges(): Unit = {
@@ -61,8 +61,8 @@ class IslandTopologyCoordinator(var topology: IslandTopology, islandActor: Actor
 }
 
 object IslandTopologyCoordinator {
-  def props(islandActor: ActorRef, initialTopology: IslandTopology = RingTopology()): Props =
-    Props(new IslandTopologyCoordinator(initialTopology, islandActor))
+  def props(subscribers: ActorSelection, initialTopology: IslandTopology = RingTopology()): Props =
+    Props(new IslandTopologyCoordinator(initialTopology, subscribers))
 
   case class NeighboursChanged(neighbours: List[ActorSelection])
 

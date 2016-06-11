@@ -4,7 +4,8 @@ import akka.actor.{ActorRef, ActorSelection, ActorSystem}
 import akka.testkit.{ImplicitSender, TestActorRef, TestKit, TestProbe}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, WordSpecLike}
 import pl.edu.agh.akka.mas.cluster.management.IslandTopologyCoordinator.NeighboursChanged
-import pl.edu.agh.akka.mas.island.ResultExchangeArena.{BestSolutionQuery, GlobalSolution, NewGlobalSolution, NewLocalSolution}
+import pl.edu.agh.akka.mas.island.resultexchange.ResultExchangeArena
+import ResultExchangeArena.{BestSolutionQuery, GlobalSolution, NewGlobalSolution, NewLocalSolution}
 import pl.edu.agh.akka.mas.island.rastrigin.RastriginSolution
 
 /**

@@ -1,9 +1,9 @@
-package pl.edu.agh.akka.mas.island
+package pl.edu.agh.akka.mas.island.migration
 
 import akka.actor._
 import pl.edu.agh.akka.mas.cluster.management.IslandTopologyCoordinator.NeighboursChanged
-import pl.edu.agh.akka.mas.island.IslandActor.SpawnNewAgents
-import pl.edu.agh.akka.mas.island.MigrationArena.{Agent, PerformMigration}
+import pl.edu.agh.akka.mas.island.PopulationActor.SpawnNewAgents
+import pl.edu.agh.akka.mas.island.migration.MigrationArena.{Agent, PerformMigration}
 import pl.edu.agh.akka.mas.island.rastrigin.RastriginFeature
 
 import scala.util.Random
@@ -11,14 +11,14 @@ import scala.util.Random
 /**
   * Created by novy on 10.04.16.
   */
-class MigrationArena(neighbourIslands: List[ActorSelection], thisIsland: ActorRef)
+class MigrationArena(neighbourIslands: List[ActorSelection])
   extends Actor with ActorLogging {
 
-  override def receive: Receive = migrationArenaBehaviour(neighbourIslands, thisIsland)
+  override def receive: Receive = migrationArenaBehaviour(neighbourIslands)
 
-  private def migrationArenaBehaviour(neighbourIslands: List[ActorSelection], thisIsland: ActorRef): Receive = {
+  private def migrationArenaBehaviour(neighbourIslands: List[ActorSelection]): Receive = {
     case NeighboursChanged(newNeighbours) =>
-      context become migrationArenaBehaviour(newNeighbours, thisIsland)
+      context become migrationArenaBehaviour(newNeighbours)
 
     case PerformMigration(features) =>
       randomNeighbour() foreach migrate(features)
@@ -33,11 +33,8 @@ class MigrationArena(neighbourIslands: List[ActorSelection], thisIsland: ActorRe
 
 object MigrationArena {
 
-  def props(neighbours: List[ActorSelection], relatedIsland: ActorRef): Props =
-    Props(new MigrationArena(neighbours, relatedIsland))
-
-
-  case class KillAgents(addresses: List[ActorRef])
+  def props(neighbours: List[ActorSelection] = List()): Props =
+    Props(new MigrationArena(neighbours))
 
   case class PerformMigration(agents: List[Agent])
 

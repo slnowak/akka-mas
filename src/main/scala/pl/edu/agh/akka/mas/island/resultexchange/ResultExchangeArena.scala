@@ -1,9 +1,9 @@
-package pl.edu.agh.akka.mas.island
+package pl.edu.agh.akka.mas.island.resultexchange
 
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSelection, Props}
 import pl.edu.agh.akka.mas.cluster.management.IslandTopologyCoordinator.NeighboursChanged
-import pl.edu.agh.akka.mas.island.ResultExchangeArena.{BestSolutionQuery, GlobalSolution, NewGlobalSolution, NewLocalSolution}
 import pl.edu.agh.akka.mas.island.rastrigin.RastriginSolution
+import pl.edu.agh.akka.mas.island.resultexchange.ResultExchangeArena.{NewGlobalSolution, GlobalSolution, NewLocalSolution, BestSolutionQuery}
 
 /**
   * Created by novy on 13.04.16.
@@ -34,7 +34,8 @@ class ResultExchangeArena(var neighbours: List[ActorSelection], val startingSolu
 }
 
 object ResultExchangeArena {
-  def props(neighbours: List[ActorSelection], startingSolution: RastriginSolution): Props =
+  def props(neighbours: List[ActorSelection] = List(),
+            startingSolution: RastriginSolution = RastriginSolution.initial): Props =
     Props(new ResultExchangeArena(neighbours, startingSolution))
 
   case class NewGlobalSolution(solution: GlobalSolution)

@@ -9,6 +9,10 @@ case class RastriginSolution(value: Double) {
   def betterThan(another: RastriginSolution): Boolean = this.value < another.value
 }
 
+object RastriginSolution {
+  def initial: RastriginSolution = RastriginSolution(Double.MaxValue)
+}
+
 class RastriginProblem() {
   def evaluate(feature: RastriginFeature): RastriginSolution =
     RastriginSolution(

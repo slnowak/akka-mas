@@ -1,110 +1,53 @@
 package pl.edu.agh.akka.mas.island
 
-import akka.actor.SupervisorStrategy.Restart
-import akka.actor._
-import org.apache.commons.math3.random.RandomDataGenerator
-import pl.edu.agh.akka.mas.UglyStaticGlobalRandomGenerator
-import pl.edu.agh.akka.mas.cluster.management.IslandTopologyCoordinator.NeighboursChanged
-import pl.edu.agh.akka.mas.island.IslandActor.SpawnNewAgents
-import pl.edu.agh.akka.mas.island.MigrationArena.{Agent, KillAgents, PerformMigration}
-import pl.edu.agh.akka.mas.island.rastrigin.Worker.{ExchangeResult, RequestMutation}
-import pl.edu.agh.akka.mas.island.rastrigin._
-
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
+import akka.actor.{Props, Actor, ActorLogging, ActorRef}
+import akka.routing.RoundRobinPool
+import pl.edu.agh.akka.mas.island.IslandActor.StartComputation
+import pl.edu.agh.akka.mas.island.PopulationActor.IslandBehaviours
+import pl.edu.agh.akka.mas.island.migration.{AkkaClusterMigrationBehaviour, MigrationArena}
+import pl.edu.agh.akka.mas.island.mutation.MutationBehaviour
+import pl.edu.agh.akka.mas.island.rastrigin.{RastriginProblem, Worker}
+import pl.edu.agh.akka.mas.island.resultexchange.{ResultExchangeArena, ResultExchangeBehaviour}
 
 /**
-  * Created by novy on 09.04.16.
+  * Created by novy on 11.06.16.
   */
-class IslandActor(var neighbours: List[ActorSelection], random: RandomDataGenerator, worker: ActorRef) extends Actor with ActorLogging {
+class IslandActor extends Actor with ActorLogging {
 
-  // todo fix it later
-  override val supervisorStrategy =
-    OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
-      case _: Exception =>
-        log.warning("exception occurred")
-        Restart
-    }
-  val problemSize = 5
-  val migrationArena: ActorRef = createMigrationArena()
-  val resultExchangeArena: ActorRef = createResultExchangeArena()
-  val mutationArena: ActorRef = createMutationArena()
+  val population: ActorRef = createInitialPopulation()
 
-  override def preStart(): Unit = {
-    context.system.scheduler.schedule(10 seconds, 10 seconds, self, "share_system_info")
+  override def receive: Receive = {
+    case StartComputation =>
+      population ! StartComputation
   }
 
-  override def receive(): Receive = handleNeighbourhoodChanges orElse handleWorkersLifecycle orElse handleWorkersRequests
-
-  private def handleNeighbourhoodChanges: Receive = {
-    case msg@NeighboursChanged(newNeighbours) =>
-      this.neighbours = newNeighbours
-      migrationArena forward msg
-      resultExchangeArena forward msg
+  def createInitialPopulation(): ActorRef = {
+    context.actorOf(PopulationActor.props(
+      workers(),
+      IslandBehaviours(mutationBehaviour(), migrationBehaviour(), resultExchangeBehaviour())
+    ))
   }
 
-  private def handleWorkersLifecycle: Receive = {
-    case SpawnNewAgents(initialSolution) =>
-      log.info(s"got request to create new workers from ${sender()}, with data: $initialSolution")
-    //      val newWorkers: List[ActorRef] = initialSolution map spawnAgent
-
-    case KillAgents(agentAddresses) =>
-      agentAddresses foreach killAgent
-  }
-
-  private def killAgent(agent: ActorRef): Unit = agent ! PoisonPill
-
-  private def handleWorkersRequests: Receive = {
-    case msg@PerformMigration =>
-      migrationArena forward msg
-
-    case msg@ExchangeResult =>
-      resultExchangeArena forward msg
-
-    case RequestMutation(feature) =>
-    //      mutationArena ! Mutate(Agent(feature, sender()))
-  }
-
-  private def createMigrationArena(): ActorRef =
-    context.actorOf(MigrationArena.props(neighbours, self), "MigrationArena")
-
-  private def createResultExchangeArena(): ActorRef = context.actorOf(
-    ResultExchangeArena.props(neighbours, startingSolution())
+  def workers(): ActorRef = context.actorOf(
+    RoundRobinPool(5).props(Worker.props(new RastriginProblem())),
+    "workersRouter"
   )
 
-  private def startingSolution(): RastriginSolution = RastriginSolution(Double.MaxValue)
-
-  private def createMutationArena(): ActorRef = context.actorOf(
-    MutationArena.props()
+  def resultExchangeBehaviour() = ResultExchangeBehaviour(
+    context.actorOf(ResultExchangeArena.props(), "resultExchange")
   )
 
-  //  private def initialWorkers(): Set[ActorRef] = {
-  //    (for (i <- 0 to workers) yield spawnAgent()) toSet
-  //  }
+  def mutationBehaviour(): MutationBehaviour = MutationBehaviour()
 
-  private def spawnAgent(): ActorRef = spawnAgent(startingFeature())
-
-  private def spawnAgent(startingFeature: RastriginFeature): ActorRef =
-    context.actorOf(Worker.props(new RastriginProblem()))
-
-  private def startingFeature(): RastriginFeature =
-    RastriginFeature(
-      Array.fill(problemSize) {
-        random.nextUniform(-5.12, 5.12)
-      }
-    )
+  def migrationBehaviour() = AkkaClusterMigrationBehaviour(
+    context.actorOf(MigrationArena.props(), "migration")
+  )
 }
 
 object IslandActor {
-  def props(worker: ActorRef,
-            neighbours: List[ActorSelection] = List(),
-            random: RandomDataGenerator = UglyStaticGlobalRandomGenerator.defaultRandomGenerator()): Props =
-    Props(new IslandActor(neighbours, random, worker))
 
-  case class SolutionEvaluated(feature: RastriginFeature, solution: RastriginSolution)
+  def props(): Props = Props(new IslandActor)
 
-  case class SpawnNewAgents(agents: List[Agent])
+  case object StartComputation
 
 }
-
-

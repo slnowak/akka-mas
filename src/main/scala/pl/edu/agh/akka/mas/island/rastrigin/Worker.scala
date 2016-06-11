@@ -1,7 +1,7 @@
 package pl.edu.agh.akka.mas.island.rastrigin
 
 import akka.actor.{Actor, ActorLogging, Props}
-import pl.edu.agh.akka.mas.island.IslandActor.SolutionEvaluated
+import pl.edu.agh.akka.mas.island.PopulationActor.SolutionEvaluated
 import pl.edu.agh.akka.mas.island.rastrigin.Worker.PerformWork
 
 /**

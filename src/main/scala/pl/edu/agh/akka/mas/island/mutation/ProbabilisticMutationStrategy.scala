@@ -1,8 +1,8 @@
-package pl.edu.agh.akka.mas.island
+package pl.edu.agh.akka.mas.island.mutation
 
 import org.apache.commons.math3.random.RandomDataGenerator
 import pl.edu.agh.akka.mas.UglyStaticGlobalRandomGenerator
-import pl.edu.agh.akka.mas.island.ProbabilisticMutationStrategy.MutationParams
+import pl.edu.agh.akka.mas.island.mutation.ProbabilisticMutationStrategy.MutationParams
 import pl.edu.agh.akka.mas.island.rastrigin.RastriginFeature
 
 import scala.util.Random
