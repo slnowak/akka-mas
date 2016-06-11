@@ -35,16 +35,16 @@ class IslandActor(var neighbours: List[ActorSelection], random: RandomDataGenera
     context.system.scheduler.schedule(10 seconds, 10 seconds, self, "share_system_info")
   }
 
-  override def receive(): Receive = handleNeighbourhoodChanges orElse handleWorkersLifecycle orElse handleWorkersRequests
+  override def receive(): Receive = handleNeighbourhoodChanges() orElse handleWorkersLifecycle() orElse handleWorkersRequests()
 
-  private def handleNeighbourhoodChanges: Receive = {
+  def handleNeighbourhoodChanges(): Receive = {
     case msg@NeighboursChanged(newNeighbours) =>
       this.neighbours = newNeighbours
       migrationArena forward msg
       resultExchangeArena forward msg
   }
 
-  private def handleWorkersLifecycle: Receive = {
+  def handleWorkersLifecycle(): Receive = {
     case SpawnNewAgents(initialSolution) =>
       log.info(s"got request to create new workers from ${sender()}, with data: $initialSolution")
       val newWorkers: List[ActorRef] = initialSolution map spawnAgent
@@ -57,11 +57,13 @@ class IslandActor(var neighbours: List[ActorSelection], random: RandomDataGenera
 
   private def killAgent(agent: ActorRef): Unit = agent ! PoisonPill
 
-  private def handleWorkersRequests: Receive = {
+  def handleWorkersRequests(): Receive = {
     case msg@RequestMigration =>
+      log.info(s"request migration sent")
       migrationArena forward msg
 
     case msg@ExchangeResult =>
+      log.info(s"request exchnage res sent")
       resultExchangeArena forward msg
 
     case RequestMutation(feature) =>

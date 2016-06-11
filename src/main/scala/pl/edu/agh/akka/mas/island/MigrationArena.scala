@@ -5,6 +5,7 @@ import pl.edu.agh.akka.mas.cluster.management.IslandTopologyCoordinator.Neighbou
 import pl.edu.agh.akka.mas.island.MigrationArena.{Agent, KillAgents, SpawnNewAgents}
 import pl.edu.agh.akka.mas.island.rastrigin.AgentActor.RequestMigration
 import pl.edu.agh.akka.mas.island.rastrigin.RastriginFeature
+import pl.edu.agh.akka.mas.logging.LoggingActor.MigrationPerformed
 
 import scala.util.Random
 
@@ -14,6 +15,7 @@ import scala.util.Random
 class MigrationArena(var neighbourIslands: List[ActorSelection], thisIsland: ActorRef, requiredAgentsToMigrate: Int)
   extends Actor with ActorLogging {
 
+  def logger = context.actorSelection("/user/logging/singleton")
   var agentsToMigrate: List[Agent] = List.empty
 
   override def receive: Receive = {
@@ -33,7 +35,10 @@ class MigrationArena(var neighbourIslands: List[ActorSelection], thisIsland: Act
   private def migrate(agentsToMigrate: List[Agent])(neighbour: ActorSelection): Unit = {
     neighbour ! SpawnNewAgents(agentsToMigrate.map(_.feature))
     thisIsland ! KillAgents(agentsToMigrate.map(_.agentActor))
+    logger ! MigrationPerformed
   }
+
+
 
   private def enoughAgentsGathered(): Boolean = agentsToMigrate.size + 1 == requiredAgentsToMigrate
 

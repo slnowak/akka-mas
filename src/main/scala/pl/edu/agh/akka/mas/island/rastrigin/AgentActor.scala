@@ -3,6 +3,7 @@ package pl.edu.agh.akka.mas.island.rastrigin
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import pl.edu.agh.akka.mas.island.MutationArena.ApplyNewFeature
 import pl.edu.agh.akka.mas.island.rastrigin.AgentActor._
+import pl.edu.agh.akka.mas.logging.LoggingActor.MigrationPerformed
 
 import scala.concurrent.duration._
 
@@ -18,7 +19,7 @@ class AgentActor(var feature: RastriginFeature,
 
   override def preStart(): Unit = {
     context.system.scheduler.schedule(10 seconds, 10 seconds, self, Calculate)
-    context.system.scheduler.schedule(10 seconds, 20 second, self, Migrate)
+    context.system.scheduler.schedule(10 seconds, 10 second, self, Migrate)
     context.system.scheduler.schedule(10 seconds, 20 seconds, self, Mutate)
   }
 
