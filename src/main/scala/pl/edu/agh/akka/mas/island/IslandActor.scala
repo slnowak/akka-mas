@@ -5,9 +5,9 @@ import akka.actor._
 import org.apache.commons.math3.random.RandomDataGenerator
 import pl.edu.agh.akka.mas.UglyStaticGlobalRandomGenerator
 import pl.edu.agh.akka.mas.cluster.management.IslandTopologyCoordinator.NeighboursChanged
-import pl.edu.agh.akka.mas.island.MigrationArena.{Agent, KillAgents, SpawnNewAgents}
-import pl.edu.agh.akka.mas.island.MutationArena.Mutate
-import pl.edu.agh.akka.mas.island.rastrigin.Worker.{ExchangeResult, RequestMigration, RequestMutation}
+import pl.edu.agh.akka.mas.island.IslandActor.SpawnNewAgents
+import pl.edu.agh.akka.mas.island.MigrationArena.{Agent, KillAgents, PerformMigration}
+import pl.edu.agh.akka.mas.island.rastrigin.Worker.{ExchangeResult, RequestMutation}
 import pl.edu.agh.akka.mas.island.rastrigin._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -46,7 +46,7 @@ class IslandActor(var neighbours: List[ActorSelection], random: RandomDataGenera
   private def handleWorkersLifecycle: Receive = {
     case SpawnNewAgents(initialSolution) =>
       log.info(s"got request to create new workers from ${sender()}, with data: $initialSolution")
-      val newWorkers: List[ActorRef] = initialSolution map spawnAgent
+    //      val newWorkers: List[ActorRef] = initialSolution map spawnAgent
 
     case KillAgents(agentAddresses) =>
       agentAddresses foreach killAgent
@@ -55,18 +55,18 @@ class IslandActor(var neighbours: List[ActorSelection], random: RandomDataGenera
   private def killAgent(agent: ActorRef): Unit = agent ! PoisonPill
 
   private def handleWorkersRequests: Receive = {
-    case msg@RequestMigration =>
+    case msg@PerformMigration =>
       migrationArena forward msg
 
     case msg@ExchangeResult =>
       resultExchangeArena forward msg
 
     case RequestMutation(feature) =>
-      mutationArena ! Mutate(Agent(feature, sender()))
+    //      mutationArena ! Mutate(Agent(feature, sender()))
   }
 
   private def createMigrationArena(): ActorRef =
-    context.actorOf(MigrationArena.props(neighbours, self, 2), "MigrationArena")
+    context.actorOf(MigrationArena.props(neighbours, self), "MigrationArena")
 
   private def createResultExchangeArena(): ActorRef = context.actorOf(
     ResultExchangeArena.props(neighbours, startingSolution())
@@ -78,9 +78,9 @@ class IslandActor(var neighbours: List[ActorSelection], random: RandomDataGenera
     MutationArena.props()
   )
 
-//  private def initialWorkers(): Set[ActorRef] = {
-//    (for (i <- 0 to workers) yield spawnAgent()) toSet
-//  }
+  //  private def initialWorkers(): Set[ActorRef] = {
+  //    (for (i <- 0 to workers) yield spawnAgent()) toSet
+  //  }
 
   private def spawnAgent(): ActorRef = spawnAgent(startingFeature())
 
@@ -102,6 +102,8 @@ object IslandActor {
     Props(new IslandActor(neighbours, random, worker))
 
   case class SolutionEvaluated(feature: RastriginFeature, solution: RastriginSolution)
+
+  case class SpawnNewAgents(agents: List[Agent])
 
 }
 

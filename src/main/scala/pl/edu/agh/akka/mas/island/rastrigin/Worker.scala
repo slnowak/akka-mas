@@ -24,8 +24,6 @@ object Worker {
 
   case class RequestMutation(feature: RastriginFeature)
 
-  case class RequestMigration(feature: RastriginFeature)
-
   case class ExchangeResult(solution: RastriginSolution)
 
   case class PerformWork(features: RastriginFeature)

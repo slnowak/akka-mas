@@ -2,8 +2,8 @@ package pl.edu.agh.akka.mas.island
 
 import akka.actor._
 import pl.edu.agh.akka.mas.cluster.management.IslandTopologyCoordinator.NeighboursChanged
-import pl.edu.agh.akka.mas.island.MigrationArena.{Agent, KillAgents, SpawnNewAgents}
-import pl.edu.agh.akka.mas.island.rastrigin.Worker.RequestMigration
+import pl.edu.agh.akka.mas.island.IslandActor.SpawnNewAgents
+import pl.edu.agh.akka.mas.island.MigrationArena.{Agent, PerformMigration}
 import pl.edu.agh.akka.mas.island.rastrigin.RastriginFeature
 
 import scala.util.Random
@@ -11,45 +11,36 @@ import scala.util.Random
 /**
   * Created by novy on 10.04.16.
   */
-class MigrationArena(var neighbourIslands: List[ActorSelection], thisIsland: ActorRef, requiredAgentsToMigrate: Int)
+class MigrationArena(neighbourIslands: List[ActorSelection], thisIsland: ActorRef)
   extends Actor with ActorLogging {
 
-  var agentsToMigrate: List[Agent] = List.empty
+  override def receive: Receive = migrationArenaBehaviour(neighbourIslands, thisIsland)
 
-  override def receive: Receive = {
+  private def migrationArenaBehaviour(neighbourIslands: List[ActorSelection], thisIsland: ActorRef): Receive = {
     case NeighboursChanged(newNeighbours) =>
-      this.neighbourIslands = newNeighbours
+      context become migrationArenaBehaviour(newNeighbours, thisIsland)
 
-    case RequestMigration(feature) if enoughAgentsGathered() =>
-      log.info(s"$self: starting migration with agents: $agentsToMigrate to random neighbour from: $neighbourIslands")
-      agentsToMigrate = Agent(feature, sender()) :: agentsToMigrate
-      randomNeighbour() foreach migrate(agentsToMigrate reverse)
-      agentsToMigrate = List.empty
-
-    case RequestMigration(feature) =>
-      agentsToMigrate = Agent(feature, sender()) :: agentsToMigrate
+    case PerformMigration(features) =>
+      randomNeighbour() foreach migrate(features)
   }
-
-  private def migrate(agentsToMigrate: List[Agent])(neighbour: ActorSelection): Unit = {
-    neighbour ! SpawnNewAgents(agentsToMigrate.map(_.feature))
-    thisIsland ! KillAgents(agentsToMigrate.map(_.agentActor))
-  }
-
-  private def enoughAgentsGathered(): Boolean = agentsToMigrate.size + 1 == requiredAgentsToMigrate
 
   private def randomNeighbour(): Option[ActorSelection] = Random.shuffle(neighbourIslands).headOption
+
+  private def migrate(agents: List[Agent])(neighbour: ActorSelection): Unit = {
+    neighbour ! SpawnNewAgents(agents)
+  }
 }
 
 object MigrationArena {
 
-  def props(neighbours: List[ActorSelection], relatedIsland: ActorRef, requiredAgentsToMigrate: Int = 3): Props =
-    Props(new MigrationArena(neighbours, relatedIsland, requiredAgentsToMigrate))
+  def props(neighbours: List[ActorSelection], relatedIsland: ActorRef): Props =
+    Props(new MigrationArena(neighbours, relatedIsland))
 
-  case class SpawnNewAgents(initialFeatures: List[RastriginFeature])
 
   case class KillAgents(addresses: List[ActorRef])
 
-  //  todo move
-  case class Agent(feature: RastriginFeature, agentActor: ActorRef)
+  case class PerformMigration(agents: List[Agent])
+
+  case class Agent(feature: RastriginFeature)
 
 }

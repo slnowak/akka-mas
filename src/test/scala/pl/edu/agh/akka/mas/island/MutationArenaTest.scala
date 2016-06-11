@@ -38,7 +38,7 @@ class MutationArenaTest extends TestKit(ActorSystem()) with WordSpecLike with Be
       val initialFeature: RastriginFeature = featureWith(Array(333, 666))
 
       // when
-      objectUnderTest ! Mutate(Agent(initialFeature, testProbe.ref))
+      objectUnderTest ! Mutate(Agent(initialFeature))
 
       // then
       testProbe expectMsg ApplyNewFeature(featureWith(Array(666, 1332)))
