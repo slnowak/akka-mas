@@ -2,17 +2,18 @@ package pl.edu.agh.akka.mas.island.rastrigin
 
 import akka.actor.{Actor, ActorLogging, Props}
 import pl.edu.agh.akka.mas.island.PopulationActor.SolutionEvaluated
-import pl.edu.agh.akka.mas.island.rastrigin.Worker.PerformWork
+import pl.edu.agh.akka.mas.island.rastrigin.Worker.EvaluateFeature
 
 /**
   * Created by novy on 10.04.16.
   */
 class Worker(problem: RastriginProblem) extends Actor with ActorLogging {
 
-  override def receive: Receive = performWork
+  override def receive: Receive = performComputation
 
-  private def performWork: Receive = {
-    case PerformWork(feature) =>
+  private def performComputation: Receive = {
+    case EvaluateFeature(feature) =>
+      log.info(s"got feature $feature to evaluate")
       sender() ! SolutionEvaluated(feature, evaluateFeature(feature))
   }
 
@@ -26,6 +27,6 @@ object Worker {
 
   case class ExchangeResult(solution: RastriginSolution)
 
-  case class PerformWork(features: RastriginFeature)
+  case class EvaluateFeature(feature: RastriginFeature)
 
 }

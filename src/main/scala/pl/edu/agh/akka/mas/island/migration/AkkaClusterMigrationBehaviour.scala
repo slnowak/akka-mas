@@ -8,8 +8,8 @@ import scala.util.Random
 /**
   * Created by novy on 11.06.16.
   */
-class AkkaClusterMigrationBehaviour(migrationArena: ActorRef) extends MigrationBehaviour {
-  override def chooseAgentsToMigrate(agents: List[Agent]): List[Agent] = randomAgents(2)(agents)
+class AkkaClusterMigrationBehaviour(migrationArena: ActorRef, agentsToMigrate: Int) extends MigrationBehaviour {
+  override def chooseAgentsToMigrate(agents: List[Agent]): List[Agent] = randomAgents(agentsToMigrate)(agents)
 
   override def migrateAgents(agentsToMigrate: List[Agent]): Unit = migrationArena ! PerformMigration(agentsToMigrate)
 
@@ -19,5 +19,10 @@ class AkkaClusterMigrationBehaviour(migrationArena: ActorRef) extends MigrationB
 }
 
 object AkkaClusterMigrationBehaviour {
-  def apply(migrationArena: ActorRef) = new AkkaClusterMigrationBehaviour(migrationArena)
+  private def AGENTS_TO_MIGRATE_AT_ONCE = 2
+
+  def apply(migrationArena: ActorRef,
+            agentsToMigrate: Int = AGENTS_TO_MIGRATE_AT_ONCE) = {
+    new AkkaClusterMigrationBehaviour(migrationArena, agentsToMigrate)
+  }
 }

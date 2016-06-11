@@ -11,20 +11,22 @@ import scala.util.Random
 /**
   * Created by novy on 10.04.16.
   */
-class MigrationArena(neighbourIslands: List[ActorSelection])
+class MigrationArena(initialNeighbours: List[ActorSelection])
   extends Actor with ActorLogging {
 
-  override def receive: Receive = migrationArenaBehaviour(neighbourIslands)
+  override def receive: Receive = migrationArenaBehaviour(initialNeighbours)
 
   private def migrationArenaBehaviour(neighbourIslands: List[ActorSelection]): Receive = {
     case NeighboursChanged(newNeighbours) =>
+      log.info(s"neighbourhood changed: $newNeighbours")
       context become migrationArenaBehaviour(newNeighbours)
 
     case PerformMigration(features) =>
-      randomNeighbour() foreach migrate(features)
+      log.info(s"about to migrate $features")
+      randomNeighbourFrom(neighbourIslands) foreach migrate(features)
   }
 
-  private def randomNeighbour(): Option[ActorSelection] = Random.shuffle(neighbourIslands).headOption
+  private def randomNeighbourFrom(neighbours: List[ActorSelection]): Option[ActorSelection] = Random.shuffle(neighbours).headOption
 
   private def migrate(agents: List[Agent])(neighbour: ActorSelection): Unit = {
     neighbour ! SpawnNewAgents(agents)

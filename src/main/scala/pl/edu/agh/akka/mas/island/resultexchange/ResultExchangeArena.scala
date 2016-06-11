@@ -13,6 +13,7 @@ class ResultExchangeArena(var neighbours: List[ActorSelection], val startingSolu
 
   override def receive: Receive = {
     case NeighboursChanged(newNeighbours) =>
+      log.info(s"neighbourhood changed: $newNeighbours")
       this.neighbours = newNeighbours
 
     case BestSolutionQuery =>
