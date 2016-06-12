@@ -11,7 +11,9 @@ import scala.util.Random
 class AkkaClusterMigrationBehaviour(migrationArena: ActorRef, agentsToMigrate: Int) extends MigrationBehaviour {
   override def chooseAgentsToMigrate(agents: List[Agent]): List[Agent] = randomAgents(agentsToMigrate)(agents)
 
-  override def migrateAgents(agentsToMigrate: List[Agent]): Unit = migrationArena ! PerformMigration(agentsToMigrate)
+  override def migrateAgents(agentsToMigrate: List[Agent]): Unit = {
+    migrationArena ! PerformMigration(agentsToMigrate)
+  }
 
   private def randomAgents(numberOfAgents: Int): List[Agent] => List[Agent] = {
     agents => Random.shuffle(agents).take(numberOfAgents)

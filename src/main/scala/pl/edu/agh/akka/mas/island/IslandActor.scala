@@ -12,7 +12,7 @@ import pl.edu.agh.akka.mas.island.resultexchange.{ResultExchangeArena, ResultExc
 /**
   * Created by novy on 11.06.16.
   */
-class IslandActor extends Actor with ActorLogging {
+class IslandActor() extends Actor with ActorLogging {
   val population: ActorRef = createInitialPopulation()
 
   override def receive: Receive = {
@@ -45,7 +45,7 @@ class IslandActor extends Actor with ActorLogging {
 
 object IslandActor {
 
-  def props(): Props = Props(new IslandActor)
+  def props(): Props = Props(new IslandActor())
 
   case object InitPopulation
 

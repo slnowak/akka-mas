@@ -10,6 +10,8 @@ import pl.edu.agh.akka.mas.island.mutation.MutationBehaviour
 import pl.edu.agh.akka.mas.island.rastrigin.Worker.EvaluateFeature
 import pl.edu.agh.akka.mas.island.rastrigin._
 import pl.edu.agh.akka.mas.island.resultexchange.ResultExchangeBehaviour
+import pl.edu.agh.akka.mas.logging.LoggingActor.{MigrationPerformed, MutationPerformed}
+import pl.edu.agh.akka.mas.logging.RemoteAddressExtension
 
 /**
   * Created by novy on 09.04.16.
@@ -17,6 +19,8 @@ import pl.edu.agh.akka.mas.island.resultexchange.ResultExchangeBehaviour
 class PopulationActor(random: RandomDataGenerator, workers: ActorRef, behaviours: IslandBehaviours) extends Actor with ActorLogging {
   val problemSize = 2
   val populationSize = 10
+
+  def logger = context.actorSelection("/user/logging/singleton")
 
   override def receive: Receive = readyForComputation(randomPopulationOfSize(populationSize))
 
@@ -47,6 +51,7 @@ class PopulationActor(random: RandomDataGenerator, workers: ActorRef, behaviours
         behaviours.solutionExchange.exchangeSolution(solution)
         val withoutEmigrants = populationWithSomeAgentsMigrated(population)
         context become readyForComputation(behaviours.mutation.mutate(withoutEmigrants))
+        logger ! MutationPerformed(self, withoutEmigrants.length)
         self ! PerformComputation
     }
   }
@@ -54,6 +59,8 @@ class PopulationActor(random: RandomDataGenerator, workers: ActorRef, behaviours
   private def populationWithSomeAgentsMigrated(population: List[Agent]): List[Agent] = {
     val toMigrate: List[Agent] = behaviours.migration.chooseAgentsToMigrate(population)
     behaviours.migration.migrateAgents(toMigrate)
+    // log migration
+    logger ! MigrationPerformed(self, toMigrate.length)
     population diff toMigrate
   }
 
