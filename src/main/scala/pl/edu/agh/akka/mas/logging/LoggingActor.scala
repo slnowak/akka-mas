@@ -19,7 +19,8 @@ object LoggingActor {
 
 class LoggingActor extends Actor with ActorLogging {
 
-  val migrationsHistogram = Kamon.metrics.histogram("migrations-histogram")
+  val migrationsCounter = Kamon.metrics.counter("migrations-counter")
+  val mutationsCounter = Kamon.metrics.counter("mutations-counter")
 
   var totalNumberOfMigrations = 0
   var totalNumberOfMutations = 0
@@ -27,10 +28,11 @@ class LoggingActor extends Actor with ActorLogging {
   override def receive: Receive = {
     case MigrationPerformed(island, numberOfMigrations) =>
       totalNumberOfMigrations  += numberOfMigrations
-      migrationsHistogram.record(totalNumberOfMigrations)
+      migrationsCounter.increment(numberOfMigrations)
 
     case MutationPerformed(island, numberOfMutations) =>
       totalNumberOfMutations += numberOfMutations
+      mutationsCounter.increment(numberOfMutations)
   }
 
 }
